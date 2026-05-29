@@ -40,8 +40,35 @@ model Equipment {
   inquiries Inquiry[]
 }
 
+model Company {
+  id        String    @id @default(cuid())
+  name      String
+  industry  String?
+  country   String?
+  website   String?
+  notes     String?
+  contacts  Contact[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Contact {
+  id        String    @id @default(cuid())
+  companyId String?
+  company   Company?  @relation(fields: [companyId], references: [id])
+  name      String
+  email     String    @unique
+  phone     String?
+  jobTitle  String?
+  notes     String?
+  inquiries Inquiry[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Inquiry {
   id           String @id @default(cuid())
+  oppNumber    String? @unique
 
   // Contact info
   companyName  String
@@ -53,6 +80,8 @@ model Inquiry {
   // CRM fields
   equipmentId  String?
   equipment    Equipment? @relation(fields: [equipmentId], references: [id])
+  contactId    String?
+  contact      Contact?   @relation(fields: [contactId], references: [id])
   status       String     @default("New")
   priority     String     @default("Medium")
   assignedTo   String?
@@ -63,6 +92,28 @@ model Inquiry {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model EquipmentListing {
+  id               String   @id @default(cuid())
+  companyName      String
+  contactName      String
+  contactEmail     String
+  contactPhone     String?
+  equipmentType    String
+  manufacturer     String?
+  model            String?
+  ratedPowerMW     Float?
+  yearOfManufacture Int?
+  operatingHours   Int?
+  condition        String?
+  location         String?
+  description      String?
+  askingPrice      String?
+  status           String   @default("Pending")
+  adminNotes       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model User {

@@ -13,6 +13,29 @@ const inquirySchema = z.object({
   equipmentTitle: z.string().optional(),
 });
 
+async function generateOppNumber(): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear().toString();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  // Count inquiries created today
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  const todayCount = await prisma.inquiry.count({
+    where: {
+      createdAt: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    },
+  });
+
+  const sequence = String(todayCount + 1).padStart(3, "0");
+  return `OPP${year}${month}${day}${sequence}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -45,14 +68,44 @@ export async function POST(req: NextRequest) {
       resolvedEquipmentId = eq?.id ?? null;
     }
 
+    // Auto-create or find Company by name
+    let company = await prisma.company.findFirst({
+      where: { name: { equals: companyName } },
+    });
+    if (!company) {
+      company = await prisma.company.create({
+        data: { name: companyName },
+      });
+    }
+
+    // Auto-create or find Contact by email
+    let contact = await prisma.contact.findUnique({
+      where: { email: contactEmail },
+    });
+    if (!contact) {
+      contact = await prisma.contact.create({
+        data: {
+          name: contactName,
+          email: contactEmail,
+          phone: contactPhone ?? null,
+          companyId: company.id,
+        },
+      });
+    }
+
+    // Generate OPP number
+    const oppNumber = await generateOppNumber();
+
     const inquiry = await prisma.inquiry.create({
       data: {
+        oppNumber,
         companyName,
         contactName,
         contactEmail,
         contactPhone: contactPhone ?? null,
         message,
         equipmentId: resolvedEquipmentId,
+        contactId: contact.id,
         status: "New",
         priority: "Medium",
       },
@@ -65,7 +118,7 @@ export async function POST(req: NextRequest) {
       sendInquiryConfirmation({ companyName, contactName, contactEmail, message, equipmentTitle: eqTitle }),
     ]);
 
-    return NextResponse.json({ success: true, id: inquiry.id }, { status: 201 });
+    return NextResponse.json({ success: true, id: inquiry.id, oppNumber }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/inquiries]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

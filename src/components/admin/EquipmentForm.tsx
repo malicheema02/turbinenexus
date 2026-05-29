@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Loader2, Lock } from "lucide-react";
+import { Plus, Trash2, Loader2, Lock, Upload, X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,6 +51,8 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -73,6 +75,33 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
     control,
     name: "images",
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => formData.append("files", file));
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const { urls } = await res.json() as { urls: string[] };
+      urls.forEach((url: string) => addImage({ url }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+      // Reset file input so same files can be re-selected if needed
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const { fields: specFields, append: addSpec, remove: removeSpec } = useFieldArray({
     control,
