@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Equipment {
+  id   String @id @default(cuid())
+  slug String @unique
+
+  // ── PUBLIC FIELDS ── exposed via /api/equipment
+  title             String
+  manufacturer      String
+  equipmentType     String
+  model             String
+  ratedPowerMW      Float?
+  fuelType          String?
+  yearOfManufacture Int?
+  operatingHours    Int?
+  condition         String
+  location          String?
+  description       String
+  keySpecs          String  // JSON string of { key: string; value: string }[]
+  images            String  // JSON string of string[]
+  status            String  @default("Available")
+  featured          Boolean @default(false)
+
+  // ── PRIVATE FIELDS ── admin-only, never in public API
+  serialNumber      String?
+  internalNotes     String?
+  sellerFloorPrice  Float?
+  assetOwnerName    String?
+  assetOwnerContact String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  inquiries Inquiry[]
+}
+
+model Inquiry {
+  id           String @id @default(cuid())
+
+  // Contact info
+  companyName  String
+  contactName  String
+  contactEmail String
+  contactPhone String?
+  message      String
+
+  // CRM fields
+  equipmentId  String?
+  equipment    Equipment? @relation(fields: [equipmentId], references: [id])
+  status       String     @default("New")
+  priority     String     @default("Medium")
+  assignedTo   String?
+
+  // Stored as JSON: { timestamp, author, note }[]
+  communicationLog String?
+  internalNotes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
