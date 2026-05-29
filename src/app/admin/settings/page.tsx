@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { DEFAULT_SETTINGS } from "@/lib/defaultSettings";
 import { SiteSettingsForm } from "./SiteSettingsForm";
 
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Site Settings — Turbine Nexus Admin" };
 
 // Render groups in a sensible order rather than alphabetical.
@@ -21,7 +22,11 @@ export default async function SiteSettingsPage() {
       await prisma.siteSettings.createMany({ data: missing });
     }
 
-    const settings = await prisma.siteSettings.findMany();
+    // Explicitly select only serialisable string fields (exclude DateTime updatedAt)
+    // to avoid Next.js Server→Client prop serialisation errors.
+    const settings = await prisma.siteSettings.findMany({
+      select: { id: true, key: true, value: true, label: true, group: true },
+    });
     byGroup = settings.reduce<typeof byGroup>((acc, s) => {
       (acc[s.group] ??= []).push(s);
       return acc;

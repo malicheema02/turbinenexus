@@ -31,9 +31,12 @@ function WeChatIcon({ className }: { className?: string }) {
 
 async function getSettings() {
   try {
-    const rows = await prisma.siteSettings.findMany();
+    const rows = await prisma.siteSettings.findMany({
+      select: { key: true, value: true },
+    });
     return rows.reduce<Record<string, string>>((a, r) => { a[r.key] = r.value; return a; }, {});
-  } catch {
+  } catch (err) {
+    console.error("[Footer] Failed to load settings:", err);
     return {} as Record<string, string>;
   }
 }
