@@ -1,12 +1,23 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { Plus, Edit, Eye, Lock } from "lucide-react";
+import { Plus, Edit, Eye, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/utils";
+import { InventoryFilters } from "./InventoryFilters";
 
-export default async function AdminInventoryPage() {
-  const equipment = await prisma.equipment.findMany({
+interface SearchParams {
+  name?: string;
+  country?: string;
+  owner?: string;
+}
+
+export default async function AdminInventoryPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const allEquipment = await prisma.equipment.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -19,19 +30,41 @@ export default async function AdminInventoryPage() {
       status: true,
       condition: true,
       featured: true,
-      serialNumber: true,
+      location: true,
+      assetOwnerName: true,
       sellerFloorPrice: true,
       createdAt: true,
       _count: { select: { inquiries: true } },
     },
   });
 
+  // Case-insensitive JS filtering (SQLite doesn't support Prisma mode:'insensitive')
+  let equipment = allEquipment;
+  if (searchParams.name) {
+    const q = searchParams.name.toLowerCase();
+    equipment = equipment.filter((e) => e.title.toLowerCase().includes(q));
+  }
+  if (searchParams.country) {
+    const q = searchParams.country.toLowerCase();
+    equipment = equipment.filter((e) => e.location?.toLowerCase().includes(q) ?? false);
+  }
+  if (searchParams.owner) {
+    const q = searchParams.owner.toLowerCase();
+    equipment = equipment.filter((e) => e.assetOwnerName?.toLowerCase().includes(q) ?? false);
+  }
+
+  const isFiltered = searchParams.name || searchParams.country || searchParams.owner;
+
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#0F172A]">Inventory Management</h1>
-          <p className="text-slate-500 mt-1">{equipment.length} assets in database</p>
+          <p className="text-slate-500 mt-1">
+            {isFiltered
+              ? `${equipment.length} of ${allEquipment.length} assets matching filters`
+              : `${allEquipment.length} assets in database`}
+          </p>
         </div>
         <Button asChild variant="amber">
           <Link href="/admin/inventory/new">
@@ -40,6 +73,10 @@ export default async function AdminInventoryPage() {
           </Link>
         </Button>
       </div>
+
+      <Suspense>
+        <InventoryFilters />
+      </Suspense>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -51,14 +88,10 @@ export default async function AdminInventoryPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   <span className="flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Serial No.
+                    <MapPin className="w-3 h-3" /> Country
                   </span>
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  <span className="flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Floor Price
-                  </span>
-                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Floor Price</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Inquiries</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
               </tr>
@@ -67,10 +100,15 @@ export default async function AdminInventoryPage() {
               {equipment.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-16 text-slate-400">
-                    No assets yet.{" "}
-                    <Link href="/admin/inventory/new" className="text-[#1B3A5C] hover:underline font-medium">
-                      Add your first asset →
-                    </Link>
+                    {isFiltered ? (
+                      <>No assets match your filters.</>
+                    ) : (
+                      <>No assets yet.{" "}
+                        <Link href="/admin/inventory/new" className="text-[#1B3A5C] hover:underline font-medium">
+                          Add your first asset →
+                        </Link>
+                      </>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -97,8 +135,8 @@ export default async function AdminInventoryPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="text-xs text-slate-500 font-mono">
-                        {item.serialNumber ?? <span className="text-slate-300">—</span>}
+                      <span className="text-xs text-slate-600">
+                        {item.location ?? <span className="text-slate-300">—</span>}
                       </span>
                     </td>
                     <td className="px-4 py-4">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Loader2, Lock, Upload, X, ImageIcon } from "lucide-react";
+import { Plus, Trash2, Loader2, Lock, Upload, X, FileText, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +31,8 @@ const equipmentFormSchema = z.object({
   priceCurrency: z.string().default("USD"),
   // Document data room
   documentsAvailable: z.boolean().default(false),
-  images: z.array(z.object({ url: z.string().url("Valid URL required") })).default([]),
+  // Accept any non-empty string so /uploads/... paths are valid
+  images: z.array(z.object({ url: z.string().min(1) })).default([]),
   keySpecs: z.array(z.object({ key: z.string().min(1), value: z.string().min(1) })).default([]),
   // Private fields
   serialNumber: z.string().optional(),
@@ -65,12 +66,17 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [docUploading, setDocUploading] = useState(false);
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<EquipmentFormValues>({
     resolver: zodResolver(equipmentFormSchema),
@@ -87,53 +93,60 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
     },
   });
 
-  const { fields: imageFields, append: addImage, remove: removeImage } = useFieldArray({
-    control,
-    name: "images",
-  });
+  const { fields: imageFields, append: addImage, remove: removeImage } = useFieldArray({ control, name: "images" });
+  const { fields: specFields, append: addSpec, remove: removeSpec } = useFieldArray({ control, name: "keySpecs" });
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const documentUrl = watch("documentUrl");
+  const docFileName = documentUrl ? decodeURIComponent(documentUrl.split("/").pop() ?? "") : null;
+
+  // Upload photos from desktop
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     setUploading(true);
     try {
       const formData = new FormData();
-      Array.from(files).forEach((file) => formData.append("files", file));
-
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-
+      Array.from(files).forEach((f) => formData.append("files", f));
+      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Upload failed");
-
       const { urls } = await res.json() as { urls: string[] };
-      urls.forEach((url: string) => addImage({ url }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Image upload failed");
+      urls.forEach((url) => addImage({ url }));
+    } catch {
+      setError("Photo upload failed. Please try again.");
     } finally {
       setUploading(false);
-      // Reset file input so same files can be re-selected if needed
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (photoInputRef.current) photoInputRef.current.value = "";
     }
   };
 
-  const { fields: specFields, append: addSpec, remove: removeSpec } = useFieldArray({
-    control,
-    name: "keySpecs",
-  });
+  // Upload confidential document from desktop
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDocUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { urls } = await res.json() as { urls: string[] };
+      setValue("documentUrl", urls[0]);
+    } catch {
+      setError("Document upload failed. Please try again.");
+    } finally {
+      setDocUploading(false);
+      if (docInputRef.current) docInputRef.current.value = "";
+    }
+  };
 
   const onSubmit = async (data: EquipmentFormValues) => {
     setSaving(true);
     setError("");
-
     const payload = {
       ...data,
       images: JSON.stringify(data.images.map((i) => i.url)),
       keySpecs: JSON.stringify(data.keySpecs),
     };
-
     try {
       let res: Response;
       if (mode === "create") {
@@ -149,12 +162,10 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
           body: JSON.stringify(payload),
         });
       }
-
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Save failed");
+        throw new Error((body as { error?: string }).error ?? "Save failed");
       }
-
       router.push("/admin/inventory");
       router.refresh();
     } catch (err) {
@@ -165,7 +176,6 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
 
   const fieldClass = (hasError?: boolean) =>
     `flex h-10 w-full rounded-md border ${hasError ? "border-red-400" : "border-slate-300"} bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B3A5C]`;
-
   const labelClass = "block text-sm font-medium text-slate-700 mb-1.5";
   const errorClass = "text-red-500 text-xs mt-1";
   const sectionClass = "bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5";
@@ -173,9 +183,7 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
-        </div>
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
       )}
 
       {/* Public Information */}
@@ -258,7 +266,7 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
             {errors.condition && <p className={errorClass}>{errors.condition.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Location (Country/Region)</label>
+            <label className={labelClass}>Location (Country / Region)</label>
             <Input {...register("location")} placeholder="e.g. United States" />
           </div>
         </div>
@@ -290,33 +298,62 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
           </div>
         </div>
 
-        {/* Images */}
+        {/* Photos — upload from desktop */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className={labelClass}>Image URLs</label>
-            <Button type="button" variant="ghost" size="sm" onClick={() => addImage({ url: "" })}>
-              <Plus className="w-3.5 h-3.5 mr-1" /> Add Image
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {imageFields.map((field, i) => (
-              <div key={field.id} className="flex gap-2">
-                <Input {...register(`images.${i}.url`)} placeholder="https://..." className={errors.images?.[i]?.url ? "border-red-400" : ""} />
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeImage(i)}>
-                  <Trash2 className="w-4 h-4 text-red-400" />
-                </Button>
-              </div>
-            ))}
-            {imageFields.length === 0 && <p className="text-xs text-slate-400">No images added. Click &apos;Add Image&apos; to add URLs.</p>}
-          </div>
+          <label className={labelClass}>Photos</label>
+          {/* Hidden file input */}
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotoUpload}
+            className="hidden"
+          />
+          {/* Thumbnail grid */}
+          {imageFields.length > 0 && (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-3">
+              {imageFields.map((field, i) => (
+                <div key={field.id} className="relative group aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={field.url}
+                    alt={`Photo ${i + 1}`}
+                    className="w-full h-full object-cover rounded-lg border border-slate-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {imageFields.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-8 mb-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+              <ImageIcon className="w-8 h-8" />
+              <p className="text-sm">No photos yet</p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:border-[#1B3A5C] hover:text-[#1B3A5C] hover:bg-slate-50 transition-colors font-medium"
+          >
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {uploading ? "Uploading photos…" : "Upload Photos from Desktop"}
+          </button>
+          <p className="text-xs text-slate-400 mt-1.5">Supports JPG, PNG, WebP. Select multiple files at once.</p>
         </div>
       </div>
 
       {/* Status & Visibility */}
       <div className={sectionClass}>
-        <h2 className="text-lg font-bold text-[#0F172A] pb-2 border-b border-slate-100">
-          Status &amp; Visibility
-        </h2>
+        <h2 className="text-lg font-bold text-[#0F172A] pb-2 border-b border-slate-100">Status &amp; Visibility</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>Listing Status *</label>
@@ -327,12 +364,8 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
             </select>
           </div>
           <div className="flex items-center gap-3 pt-6">
-            <input
-              type="checkbox"
-              id="featured"
-              {...register("featured")}
-              className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]"
-            />
+            <input type="checkbox" id="featured" {...register("featured")}
+              className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]" />
             <label htmlFor="featured" className="text-sm font-medium text-slate-700">
               Mark as Featured (shown on homepage)
             </label>
@@ -347,14 +380,10 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
           <span className="text-xs font-normal text-slate-400 ml-2">Controls public price display</span>
         </h2>
         <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="showPrice"
-            {...register("showPrice")}
-            className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]"
-          />
+          <input type="checkbox" id="showPrice" {...register("showPrice")}
+            className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]" />
           <label htmlFor="showPrice" className="text-sm font-medium text-slate-700">
-            Show price publicly (enables &quot;Make an Offer&quot;). If off, the public page shows &quot;Price on Request&quot;.
+            Show price publicly (enables &quot;Make an Offer&quot;). If off, shows &quot;Price on Request&quot;.
           </label>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -370,14 +399,10 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
           </div>
         </div>
         <div className="flex items-center gap-3 pt-1">
-          <input
-            type="checkbox"
-            id="documentsAvailable"
-            {...register("documentsAvailable")}
-            className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]"
-          />
+          <input type="checkbox" id="documentsAvailable" {...register("documentsAvailable")}
+            className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]" />
           <label htmlFor="documentsAvailable" className="text-sm font-medium text-slate-700">
-            Technical documents available (shows &quot;Documents available upon NDA/Request&quot; on the public page)
+            Technical documents available (shows &quot;Documents available upon NDA/Request&quot; on public page)
           </label>
         </div>
       </div>
@@ -387,9 +412,7 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
         <h2 className="text-lg font-bold text-amber-900 pb-2 border-b border-amber-200 flex items-center gap-2">
           <Lock className="w-4 h-4" />
           Internal / Private Fields
-          <span className="text-xs font-normal text-amber-600 ml-1">
-            NEVER shown on public website or API
-          </span>
+          <span className="text-xs font-normal text-amber-600 ml-1">NEVER shown on public website or API</span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -414,10 +437,41 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
           </div>
         </div>
 
+        {/* Confidential Document — upload from desktop */}
         <div>
-          <label className={labelClass}>Confidential Document URL (PRIVATE)</label>
-          <Input {...register("documentUrl")} placeholder="e.g. Google Drive / Dropbox link to borescope, maintenance logs" />
-          <p className="text-xs text-amber-600 mt-1">Stored for admin reference only. Never exposed publicly — buyers must request access.</p>
+          <label className={labelClass}>Confidential Document (PRIVATE)</label>
+          {/* Hidden file input */}
+          <input
+            ref={docInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+            onChange={handleDocUpload}
+            className="hidden"
+          />
+          {/* Show current document if set */}
+          {docFileName && (
+            <div className="flex items-center gap-3 p-3 bg-white border border-amber-200 rounded-lg mb-2">
+              <FileText className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="text-sm text-slate-700 truncate flex-1">{docFileName}</span>
+              <button
+                type="button"
+                onClick={() => setValue("documentUrl", "")}
+                className="text-red-400 hover:text-red-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => docInputRef.current?.click()}
+            disabled={docUploading}
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-amber-300 bg-white rounded-lg text-sm text-amber-700 hover:border-amber-500 hover:bg-amber-50 transition-colors font-medium"
+          >
+            {docUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {docUploading ? "Uploading document…" : docFileName ? "Replace Document" : "Upload Confidential Document"}
+          </button>
+          <p className="text-xs text-amber-600 mt-1.5">Supports PDF, Word, Excel, ZIP. Stored for admin use only — never exposed publicly.</p>
         </div>
 
         <div>
