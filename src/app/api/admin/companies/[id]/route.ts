@@ -64,3 +64,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    // Nullify companyId on contacts before deleting so inquiries are preserved
+    await prisma.contact.updateMany({ where: { companyId: id }, data: { companyId: null } });
+    await prisma.company.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[DELETE /api/admin/companies/[id]]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

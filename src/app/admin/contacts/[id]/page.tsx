@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ArrowLeft, Mail, Phone, Briefcase, Building2, ChevronRight } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 
 export const metadata: Metadata = {
   title: "Contact Detail — Turbine Nexus Admin",
@@ -86,9 +87,17 @@ export default async function ContactDetailPage({
               )}
             </div>
           </div>
-          <div className="text-center px-4 py-2 bg-[#F8FAFC] rounded-lg border border-slate-200">
-            <div className="text-2xl font-bold text-[#F59E0B]">{contact.inquiries.length}</div>
-            <div className="text-xs text-slate-400">Inquiries</div>
+          <div className="flex flex-col items-end gap-3">
+            <div className="text-center px-4 py-2 bg-[#F8FAFC] rounded-lg border border-slate-200">
+              <div className="text-2xl font-bold text-[#F59E0B]">{contact.inquiries.length}</div>
+              <div className="text-xs text-slate-400">Inquiries</div>
+            </div>
+            <DeleteButton
+              apiPath={`/api/admin/contacts/${contact.id}`}
+              confirmMessage={`Delete "${contact.name}"? Inquiry history will be preserved.`}
+              redirectTo={contact.companyId ? `/admin/companies/${contact.companyId}` : "/admin/contacts"}
+              label="Delete Contact"
+            />
           </div>
         </div>
         {contact.notes && (

@@ -33,16 +33,19 @@ export async function POST(req: NextRequest) {
 
     // Auto-create/update Company + Contact in CRM
     try {
-      let company = await prisma.company.findFirst({
-        where: { name: { equals: body.companyName } },
-      });
+      const normalizedCompany = (body.companyName as string).trim();
+      const allCompanies = await prisma.company.findMany({ select: { id: true, name: true } });
+      let company = allCompanies.find(
+        (c) => c.name.toLowerCase() === normalizedCompany.toLowerCase()
+      ) ?? null;
       if (!company) {
-        company = await prisma.company.create({ data: { name: body.companyName } });
+        company = await prisma.company.create({ data: { name: normalizedCompany } });
       }
 
-      const existing = await prisma.contact.findUnique({ where: { email: body.contactEmail } });
+      const normalizedEmail = (body.contactEmail as string).toLowerCase().trim();
+      const allContacts = await prisma.contact.findMany({ select: { id: true, email: true, phone: true } });
+      const existing = allContacts.find((c) => c.email.toLowerCase() === normalizedEmail) ?? null;
       if (existing) {
-        // Update phone if it was missing
         if (!existing.phone && body.contactPhone) {
           await prisma.contact.update({
             where: { id: existing.id },
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
         await prisma.contact.create({
           data: {
             name: body.contactName,
-            email: body.contactEmail,
+            email: normalizedEmail,
             phone: body.contactPhone,
             companyId: company.id,
             jobTitle: "Equipment Owner",

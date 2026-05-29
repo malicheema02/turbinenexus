@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ChevronRight, Building2, Mail, Phone, Briefcase } from "lucide-react";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 
 const STATUS_COLORS: Record<string, string> = {
   New: "bg-blue-100 text-blue-800",
@@ -55,15 +56,23 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
               {company.website && <a href={company.website} target="_blank" rel="noreferrer" className="text-[#1B3A5C] hover:underline">🔗 {company.website}</a>}
             </div>
           </div>
-          <div className="flex gap-4 text-center">
-            <div className="px-4 py-2 bg-[#F8FAFC] rounded-lg border border-slate-200">
-              <div className="text-xl font-bold text-[#1B3A5C]">{company.contacts.length}</div>
-              <div className="text-xs text-slate-400">Contacts</div>
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex gap-4 text-center">
+              <div className="px-4 py-2 bg-[#F8FAFC] rounded-lg border border-slate-200">
+                <div className="text-xl font-bold text-[#1B3A5C]">{company.contacts.length}</div>
+                <div className="text-xs text-slate-400">Contacts</div>
+              </div>
+              <div className="px-4 py-2 bg-[#F8FAFC] rounded-lg border border-slate-200">
+                <div className="text-xl font-bold text-[#F59E0B]">{totalInquiries}</div>
+                <div className="text-xs text-slate-400">Inquiries</div>
+              </div>
             </div>
-            <div className="px-4 py-2 bg-[#F8FAFC] rounded-lg border border-slate-200">
-              <div className="text-xl font-bold text-[#F59E0B]">{totalInquiries}</div>
-              <div className="text-xs text-slate-400">Inquiries</div>
-            </div>
+            <DeleteButton
+              apiPath={`/api/admin/companies/${company.id}`}
+              confirmMessage={`Delete "${company.name}"? Contacts will be unlinked but inquiry history is preserved.`}
+              redirectTo="/admin/companies"
+              label="Delete Company"
+            />
           </div>
         </div>
         {company.notes && (

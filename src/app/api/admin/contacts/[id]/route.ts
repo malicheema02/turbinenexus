@@ -28,3 +28,19 @@ export async function GET(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    // Nullify contactId on inquiries so they are preserved
+    await prisma.inquiry.updateMany({ where: { contactId: id }, data: { contactId: null } });
+    await prisma.contact.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[DELETE /api/admin/contacts/[id]]", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

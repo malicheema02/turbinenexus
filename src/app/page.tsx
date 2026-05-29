@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { EquipmentCard } from "@/components/inventory/EquipmentCard";
+import { FeaturedInventorySection } from "@/components/inventory/FeaturedInventorySection";
 import { findFeaturedEquipment } from "@/lib/queries";
 
 export const metadata: Metadata = {
@@ -179,11 +179,7 @@ export default async function HomePage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredEquipment.map((item) => (
-                  <EquipmentCard key={item.id} equipment={item} />
-                ))}
-              </div>
+              <FeaturedInventorySection items={featuredEquipment} />
             </div>
           </section>
         )}

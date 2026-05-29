@@ -10,6 +10,7 @@ interface EquipmentCardProps {
   equipment: PublicEquipmentRow;
   onInquire?: (id: string, title: string) => void;
   teamsLink?: string;
+  priority?: boolean;
 }
 
 const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
@@ -26,12 +27,16 @@ const typeLabels: Record<string, string> = {
   Other: "Equipment",
 };
 
-export function EquipmentCard({ equipment, onInquire, teamsLink = "#" }: EquipmentCardProps) {
+export function EquipmentCard({ equipment, onInquire, teamsLink = "#", priority = false }: EquipmentCardProps) {
   const images = parseJsonSafe<string[]>(equipment.images, []);
   const firstImage = images[0];
+  const detailUrl = `/inventory/${equipment.slug}`;
 
   return (
-    <article className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col">
+    <article className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group">
+      {/* Full-card clickable link — sits behind interactive elements */}
+      <Link href={detailUrl} className="absolute inset-0 z-0" aria-label={`View details for ${equipment.title}`} />
+
       {/* Image */}
       <div className="relative h-48 bg-gradient-to-br from-[#1B3A5C] to-[#0F172A] overflow-hidden">
         {firstImage ? (
@@ -39,7 +44,8 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#" }: Equipme
             src={firstImage}
             alt={equipment.title}
             fill
-            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            priority={priority}
+            className="object-cover opacity-80 group-hover:opacity-95 transition-opacity"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
@@ -47,13 +53,13 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#" }: Equipme
             <Zap className="w-16 h-16 text-slate-600" />
           </div>
         )}
-        <div className="absolute top-3 left-3 flex gap-2">
+        <div className="absolute top-3 left-3 flex gap-2 z-10">
           <Badge variant={statusVariant[equipment.status] ?? "secondary"}>
             {STATUS_LABELS[equipment.status] ?? equipment.status}
           </Badge>
         </div>
         {equipment.featured && (
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 z-10">
             <Badge variant="default" className="bg-[#F59E0B] text-white">
               Featured
             </Badge>
@@ -62,7 +68,7 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#" }: Equipme
       </div>
 
       {/* Content */}
-      <div className="p-5 flex flex-col flex-1">
+      <div className="p-5 flex flex-col flex-1 relative z-10">
         <div className="mb-3">
           <span className="text-xs font-semibold text-[#1B3A5C] uppercase tracking-wider">
             {typeLabels[equipment.equipmentType] ?? equipment.equipmentType} · {equipment.manufacturer}
@@ -111,22 +117,24 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#" }: Equipme
           {onInquire && (
             <Button
               variant="amber"
-              className="w-full"
-              onClick={() => onInquire(equipment.id, equipment.title)}
+              className="w-full relative z-10"
+              onClick={(e) => { e.preventDefault(); onInquire(equipment.id, equipment.title); }}
               disabled={equipment.status === "Sold"}
             >
               Inquire About This Unit
             </Button>
           )}
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" asChild>
-              <Link href={`/inventory/${equipment.slug}`}>View Details</Link>
+            <Button variant="outline" size="sm" className="flex-1 relative z-10" asChild>
+              <Link href={detailUrl}>View Details</Link>
             </Button>
-            <Button variant="secondary" size="sm" className="flex-1" asChild>
-              <a href={teamsLink} target="_blank" rel="noopener noreferrer">
-                Teams Meeting
-              </a>
-            </Button>
+            {teamsLink !== "#" && (
+              <Button variant="secondary" size="sm" className="flex-1 relative z-10" asChild>
+                <a href={teamsLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                  Teams Meeting
+                </a>
+              </Button>
+            )}
           </div>
         </div>
       </div>

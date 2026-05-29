@@ -71,27 +71,28 @@ export async function POST(req: NextRequest) {
     // Auto-create or find Company + Contact (best-effort — never block the inquiry)
     let contactId: string | null = null;
     try {
-      let company = await prisma.company.findFirst({
-        where: { name: { equals: companyName } },
-      });
+      const normalizedCompany = companyName.trim();
+      const allCompanies = await prisma.company.findMany({ select: { id: true, name: true } });
+      let company = allCompanies.find(
+        (c) => c.name.toLowerCase() === normalizedCompany.toLowerCase()
+      ) ?? null;
       if (!company) {
-        company = await prisma.company.create({ data: { name: companyName } });
+        company = await prisma.company.create({ data: { name: normalizedCompany } });
       }
 
-      let contact = await prisma.contact.findUnique({
-        where: { email: contactEmail },
-      });
+      const normalizedEmail = contactEmail.toLowerCase().trim();
+      const allContacts = await prisma.contact.findMany({ select: { id: true, email: true, phone: true } });
+      let contact = allContacts.find((c) => c.email.toLowerCase() === normalizedEmail) ?? null;
       if (!contact) {
         contact = await prisma.contact.create({
           data: {
             name: contactName,
-            email: contactEmail,
+            email: normalizedEmail,
             phone: contactPhone ?? null,
             companyId: company.id,
           },
         });
       } else if (!contact.phone && contactPhone) {
-        // Update missing phone number
         contact = await prisma.contact.update({
           where: { id: contact.id },
           data: { phone: contactPhone },
