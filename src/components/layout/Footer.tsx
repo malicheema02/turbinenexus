@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Zap, Mail, Phone, MapPin, ExternalLink, Linkedin } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 function TelegramIcon({ className }: { className?: string }) {
   return (
@@ -27,7 +28,24 @@ function WeChatIcon({ className }: { className?: string }) {
   );
 }
 
-export function Footer() {
+async function getSettings() {
+  try {
+    const rows = await prisma.siteSettings.findMany();
+    return rows.reduce<Record<string, string>>((a, r) => { a[r.key] = r.value; return a; }, {});
+  } catch {
+    return {} as Record<string, string>;
+  }
+}
+
+export async function Footer() {
+  const s = await getSettings();
+  const linkedinUrl = s.linkedin_url || "#";
+  const telegramUrl = s.telegram_url || "#";
+  const wechatUrl   = s.wechat_id    || "#";
+  const salesEmail  = s.sales_email  || "sales@TurbineNexus.com";
+  const infoEmail   = s.info_email   || "info@turbinenexus.com";
+  const tagline     = s.footer_tagline || "Global specialists in the relocation and redeployment of surplus power generation equipment.";
+  const location    = s.footer_location || "Global Operations — Serving 40+ Countries";
   return (
     <footer className="bg-[#0F172A] text-slate-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,49 +62,45 @@ export function Footer() {
                 <span className="text-[#F59E0B] font-semibold text-xs tracking-[0.2em] -mt-0.5">NEXUS</span>
               </div>
             </Link>
-            <p className="text-sm leading-relaxed text-slate-400 mb-5">
-              Global specialists in the relocation and redeployment of surplus power generation equipment.
-            </p>
+            <p className="text-sm leading-relaxed text-slate-400 mb-5">{tagline}</p>
             <div className="flex flex-col gap-2.5 mb-5">
-              <a
-                href="mailto:sales@TurbineNexus.com"
-                className="flex items-center gap-2 text-sm text-[#F59E0B] hover:text-[#D97706] transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                sales@TurbineNexus.com
+              <a href={`mailto:${salesEmail}`}
+                className="flex items-center gap-2 text-sm text-[#F59E0B] hover:text-[#D97706] transition-colors">
+                <Mail className="w-4 h-4" />{salesEmail}
               </a>
-              <a
-                href="mailto:info@turbinenexus.com"
-                className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                info@turbinenexus.com
+              <a href={`mailto:${infoEmail}`}
+                className="flex items-center gap-2 text-sm hover:text-white transition-colors">
+                <Mail className="w-4 h-4" />{infoEmail}
               </a>
             </div>
 
             {/* Social icons */}
             <div className="flex items-center gap-2">
-              <a
-                href="#"
-                aria-label="Turbine Nexus on LinkedIn"
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#0A66C2] flex items-center justify-center transition-colors"
-              >
-                <Linkedin className="w-4 h-4 text-slate-400 hover:text-white" />
-              </a>
-              <a
-                href="#"
-                aria-label="Turbine Nexus on Telegram"
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#229ED9] flex items-center justify-center transition-colors"
-              >
-                <TelegramIcon className="w-4 h-4 text-slate-400 hover:text-white" />
-              </a>
-              <a
-                href="#"
-                aria-label="Turbine Nexus on WeChat"
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#07C160] flex items-center justify-center transition-colors"
-              >
-                <WeChatIcon className="w-4 h-4 text-slate-400 hover:text-white" />
-              </a>
+              {linkedinUrl !== "#" && (
+                <a href={linkedinUrl} target="_blank" rel="noopener noreferrer"
+                  aria-label="Turbine Nexus on LinkedIn"
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#0A66C2] flex items-center justify-center transition-colors">
+                  <Linkedin className="w-4 h-4 text-slate-400" />
+                </a>
+              )}
+              {telegramUrl !== "#" && (
+                <a href={telegramUrl} target="_blank" rel="noopener noreferrer"
+                  aria-label="Turbine Nexus on Telegram"
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#229ED9] flex items-center justify-center transition-colors">
+                  <TelegramIcon className="w-4 h-4 text-slate-400" />
+                </a>
+              )}
+              {wechatUrl !== "#" && (
+                <a href={wechatUrl} target="_blank" rel="noopener noreferrer"
+                  aria-label="Turbine Nexus on WeChat"
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#07C160] flex items-center justify-center transition-colors">
+                  <WeChatIcon className="w-4 h-4 text-slate-400" />
+                </a>
+              )}
+              {/* Show placeholder icons when no URLs set yet */}
+              {linkedinUrl === "#" && telegramUrl === "#" && wechatUrl === "#" && (
+                <span className="text-xs text-slate-600 italic">Add social links in Admin → Site Settings</span>
+              )}
             </div>
           </div>
 
@@ -151,17 +165,17 @@ export function Footer() {
             <div className="bg-[#1B3A5C]/50 border border-[#1B3A5C] rounded-xl p-4 mb-4">
               <p className="text-xs text-slate-400 mb-1">For immediate assistance:</p>
               <a
-                href="mailto:sales@TurbineNexus.com"
+                href={`mailto:${salesEmail}`}
                 className="text-[#F59E0B] font-bold text-sm hover:text-[#D97706] transition-colors flex items-center gap-1"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                sales@TurbineNexus.com
+                {salesEmail}
               </a>
             </div>
             <div className="space-y-2.5 text-sm">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" />
-                <span>Global Operations — Serving 40+ Countries</span>
+                <span>{location}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 shrink-0 text-slate-500" />

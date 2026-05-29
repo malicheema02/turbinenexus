@@ -266,65 +266,107 @@ function StepCard({ number, icon: Icon, title, deliverable, children }: {
 }
 
 function FlowDiagram() {
+  // Layout constants
+  const W = 1000, H = 780;
+  // Column centres
+  const cL = 180, cM = 500, cR = 820;
+  // Row Y centres
+  const r0 = 40, r1 = 130, r2 = 230, r3 = 330, r4 = 430, r5 = 540, r6 = 640, r7 = 730;
+  const bw = 210, bh = 52, dw = 200, dh = 58;
+
   return (
     <div className="w-full overflow-x-auto">
-      <svg
-        viewBox="0 0 900 520"
-        className="w-full max-w-4xl mx-auto"
-        style={{ minWidth: 640 }}
-        aria-label="Turbine Nexus transaction flow diagram"
-      >
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-5xl mx-auto" style={{ minWidth: 700 }}
+        aria-label="Turbine Nexus transaction flow diagram">
         <defs>
-          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
             <path d="M0,0 L0,6 L8,3 z" fill="#64748B" />
           </marker>
-          <marker id="arrow-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
             <path d="M0,0 L0,6 L8,3 z" fill="#F59E0B" />
+          </marker>
+          <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#1B3A5C" />
           </marker>
         </defs>
 
-        {/* ── Entry boxes ── */}
-        <Rect x={60} y={20} w={220} h={56} fill="#1B3A5C" label="Trader / Broker Inquiry" textColor="#fff" />
-        <Rect x={620} y={20} w={220} h={56} fill="#1B3A5C" label="Direct End Buyer Inquiry" textColor="#fff" />
+        {/* ══ ROW 0 — Entry points ══ */}
+        <Rect x={cL - bw/2} y={r0 - bh/2} w={bw} h={bh} fill="#1B3A5C" label="Trader / Broker Inquiry" textColor="#fff" />
+        <Rect x={cR - bw/2} y={r0 - bh/2} w={bw} h={bh} fill="#1B3A5C" label="Direct End Buyer Inquiry" textColor="#fff" />
 
-        {/* ── Path A decisions ── */}
-        <Diamond x={170} y={120} w={200} h={56} fill="#F59E0B" label="Commission secured?" textColor="#fff" />
-        <Rect x={20} y={220} w={160} h={52} fill="#64748B" label="Sign NCNDA" textColor="#fff" />
-        <Rect x={200} y={220} w={160} h={52} fill="#64748B" label="Revenue Sharing Agmt (10–25%)" textColor="#fff" small />
+        {/* ══ ROW 1 — Left: Commission decision | Right: Sign MOU ══ */}
+        <Diamond x={cL - dw/2} y={r1 - dh/2} w={dw} h={dh} fill="#F59E0B" label="Commission secured?" textColor="#0F172A" />
+        <Rect x={cR - bw/2} y={r1 - bh/2} w={bw} h={bh} fill="#0F172A" label="Sign MOU with End Buyer" textColor="#F59E0B" />
 
-        {/* ── Path B ── */}
-        <Rect x={620} y={120} w={220} h={56} fill="#0F172A" label="Sign MOU with Buyer" textColor="#F59E0B" />
-        <Rect x={600} y={220} w={260} h={52} fill="#0F172A" label="3% Commission milestones locked" textColor="#fff" small />
+        {/* ══ ROW 2 — NCNDA vs Revenue Sharing | Right: 3% milestones ══ */}
+        <Rect x={30} y={r2 - bh/2} w={165} h={bh} fill="#64748B" label="Sign NCNDA with Trader" textColor="#fff" small />
+        <Rect x={210} y={r2 - bh/2} w={165} h={bh} fill="#64748B" label="Revenue Sharing Agmt (10–25%)" textColor="#fff" small />
+        <Rect x={cR - bw/2} y={r2 - bh/2} w={bw} h={bh} fill="#0F172A" label="3% Commission Milestones Locked" textColor="#fff" small />
 
-        {/* ── Converge ── */}
-        <Rect x={330} y={330} w={240} h={52} fill="#1B3A5C" label="Buyer–Seller Introduction" textColor="#fff" />
-        <Rect x={330} y={410} w={240} h={52} fill="#1B3A5C" label="Physical Inspection" textColor="#fff" />
+        {/* ══ ROW 3 — Trader introduces TN to End Buyer ══ */}
+        <Rect x={cL - bw/2} y={r3 - bh/2} w={bw} h={bh} fill="#334155" label="Trader Introduces TN to End Buyer" textColor="#F59E0B" />
 
-        {/* Row 3 */}
-        <Rect x={60} y={490} w={220} h={52} fill="#F59E0B" label="Commercial Negotiation" textColor="#fff" />
-        <Rect x={620} y={490} w={220} h={52} fill="#0F172A" label="Deal Closed — SPA Executed" textColor="#F59E0B" />
+        {/* ══ ROW 4 — TN signs MOU (from trader path) ══ */}
+        <Rect x={cL - bw/2} y={r4 - bh/2} w={bw} h={bh} fill="#0F172A" label="TN Signs MOU with End Buyer" textColor="#F59E0B" />
 
-        {/* ── Arrows – Path A ── */}
-        <line x1="170" y1="76" x2="170" y2="118" stroke="#64748B" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="120" y1="148" x2="100" y2="218" stroke="#64748B" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="220" y1="148" x2="280" y2="218" stroke="#64748B" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        {/* ══ ROW 5 — Converge: Buyer-Seller Introduction ══ */}
+        <Rect x={cM - bw/2} y={r5 - bh/2} w={bw} h={bh} fill="#1B3A5C" label="Buyer–Seller Introduction" textColor="#fff" />
 
-        {/* Path A converge to centre */}
-        <line x1="100" y1="272" x2="330" y2="354" stroke="#64748B" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="280" y1="272" x2="350" y2="328" stroke="#64748B" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        {/* ══ ROW 6 — Physical Inspection ══ */}
+        <Rect x={cM - bw/2} y={r6 - bh/2} w={bw} h={bh} fill="#1B3A5C" label="Physical Inspection" textColor="#fff" />
 
-        {/* ── Arrows – Path B ── */}
-        <line x1="730" y1="76" x2="730" y2="118" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrow-amber)" />
-        <line x1="730" y1="176" x2="730" y2="218" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrow-amber)" />
-        <line x1="730" y1="272" x2="570" y2="330" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrow-amber)" />
+        {/* ══ ROW 7 — Commercial Negotiation | Deal Closed ══ */}
+        <Rect x={cL - bw/2} y={r7 - bh/2} w={bw} h={bh} fill="#F59E0B" label="Commercial Negotiation" textColor="#0F172A" />
+        <Rect x={cR - bw/2} y={r7 - bh/2} w={bw} h={bh} fill="#0F172A" label="Deal Closed — SPA Executed" textColor="#F59E0B" />
 
-        {/* ── Centre flow ── */}
-        <line x1="450" y1="382" x2="450" y2="408" stroke="#1B3A5C" strokeWidth="2" markerEnd="url(#arrow)" />
-        <line x1="370" y1="462" x2="200" y2="488" stroke="#1B3A5C" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="530" y1="462" x2="700" y2="488" stroke="#1B3A5C" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="280" y1="516" x2="618" y2="516" stroke="#F59E0B" strokeWidth="2" markerEnd="url(#arrow-amber)" />
+        {/* ══ ARROWS ══ */}
+        {/* Entry → decisions */}
+        <Arrow x1={cL} y1={r0+bh/2} x2={cL} y2={r1-dh/2} color="#64748B" />
+        <Arrow x1={cR} y1={r0+bh/2} x2={cR} y2={r1-bh/2} color="#F59E0B" />
+
+        {/* Commission diamond → NCNDA (left) */}
+        <Arrow x1={cL-dw/2} y1={r1} x2={30+165} y2={r2-bh/2} color="#64748B" label="YES" labelX={90} labelY={r1+20} />
+        {/* Commission diamond → Revenue Sharing (right) */}
+        <Arrow x1={cL+dw/2} y1={r1} x2={210} y2={r2-bh/2} color="#64748B" label="NO" labelX={280} labelY={r1+20} />
+
+        {/* Right path MOU → milestones */}
+        <Arrow x1={cR} y1={r1+bh/2} x2={cR} y2={r2-bh/2} color="#F59E0B" />
+
+        {/* NCNDA + Revenue Sharing → Trader Introduces */}
+        <Arrow x1={112} y1={r2+bh/2} x2={cL-20} y2={r3-bh/2} color="#64748B" />
+        <Arrow x1={292} y1={r2+bh/2} x2={cL+20} y2={r3-bh/2} color="#64748B" />
+
+        {/* Trader Introduces → TN Signs MOU */}
+        <Arrow x1={cL} y1={r3+bh/2} x2={cL} y2={r4-bh/2} color="#64748B" />
+
+        {/* TN Signs MOU (left) → Buyer-Seller Intro */}
+        <Arrow x1={cL+bw/2} y1={r4} x2={cM-bw/2} y2={r5} color="#64748B" />
+
+        {/* Right milestones → Buyer-Seller Intro */}
+        <Arrow x1={cR-bw/2} y1={r2+bh/2} x2={cM+bw/2} y2={r5-bh/2} color="#F59E0B" />
+
+        {/* Centre flow */}
+        <Arrow x1={cM} y1={r5+bh/2} x2={cM} y2={r6-bh/2} color="#1B3A5C" />
+        <Arrow x1={cM-30} y1={r6+bh/2} x2={cL+bw/2} y2={r7-bh/2} color="#1B3A5C" />
+        <Arrow x1={cM+30} y1={r6+bh/2} x2={cR-bw/2} y2={r7-bh/2} color="#1B3A5C" />
+
+        {/* Commercial Negotiation → Deal Closed */}
+        <line x1={cL+bw/2} y1={r7} x2={cR-bw/2} y2={r7} stroke="#F59E0B" strokeWidth="2" strokeDasharray="6 3" markerEnd="url(#arr-amber)" />
       </svg>
     </div>
+  );
+}
+
+function Arrow({ x1, y1, x2, y2, color, label, labelX, labelY }: {
+  x1: number; y1: number; x2: number; y2: number;
+  color: string; label?: string; labelX?: number; labelY?: number;
+}) {
+  const id = color === "#F59E0B" ? "arr-amber" : color === "#1B3A5C" ? "arr-blue" : "arr";
+  return (
+    <g>
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="1.5" markerEnd={`url(#${id})`} />
+      {label && <text x={labelX} y={labelY} fontSize="10" fill={color} fontWeight="700" fontFamily="Inter, sans-serif">{label}</text>}
+    </g>
   );
 }
 

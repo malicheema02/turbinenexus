@@ -14,6 +14,7 @@ import {
   Building2,
   Users,
   ClipboardList,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,12 @@ const navItems = [
     href: "/admin/listings",
     label: "Sell Listings",
     icon: ClipboardList,
+    exact: false,
+  },
+  {
+    href: "/admin/settings",
+    label: "Site Settings",
+    icon: Settings,
     exact: false,
   },
 ];

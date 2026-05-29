@@ -68,29 +68,33 @@ export async function POST(req: NextRequest) {
       resolvedEquipmentId = eq?.id ?? null;
     }
 
-    // Auto-create or find Company by name
-    let company = await prisma.company.findFirst({
-      where: { name: { equals: companyName } },
-    });
-    if (!company) {
-      company = await prisma.company.create({
-        data: { name: companyName },
+    // Auto-create or find Company + Contact (best-effort — never block the inquiry)
+    let contactId: string | null = null;
+    try {
+      let company = await prisma.company.findFirst({
+        where: { name: { equals: companyName } },
       });
-    }
+      if (!company) {
+        company = await prisma.company.create({ data: { name: companyName } });
+      }
 
-    // Auto-create or find Contact by email
-    let contact = await prisma.contact.findUnique({
-      where: { email: contactEmail },
-    });
-    if (!contact) {
-      contact = await prisma.contact.create({
-        data: {
-          name: contactName,
-          email: contactEmail,
-          phone: contactPhone ?? null,
-          companyId: company.id,
-        },
+      let contact = await prisma.contact.findUnique({
+        where: { email: contactEmail },
       });
+      if (!contact) {
+        contact = await prisma.contact.create({
+          data: {
+            name: contactName,
+            email: contactEmail,
+            phone: contactPhone ?? null,
+            companyId: company.id,
+          },
+        });
+      }
+      contactId = contact.id;
+    } catch (crmErr) {
+      // CRM tables may not exist yet — inquiry still saves successfully
+      console.warn("[POST /api/inquiries] CRM upsert skipped:", crmErr);
     }
 
     // Generate OPP number
@@ -105,7 +109,7 @@ export async function POST(req: NextRequest) {
         contactPhone: contactPhone ?? null,
         message,
         equipmentId: resolvedEquipmentId,
-        contactId: contact.id,
+        ...(contactId ? { contactId } : {}),
         status: "New",
         priority: "Medium",
       },
