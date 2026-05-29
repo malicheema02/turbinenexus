@@ -66,10 +66,10 @@ export function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
             <a
-              href="mailto:sales@TurbineNexus.com"
+              href="mailto:sales@turbinenexus.com"
               className="text-[#F59E0B] text-sm font-medium hover:text-[#D97706] transition-colors"
             >
-              sales@TurbineNexus.com
+              sales@turbinenexus.com
             </a>
             <Button asChild variant="amber" size="sm">
               <Link href="/inventory">Browse Inventory</Link>
@@ -102,10 +102,10 @@ export function Navbar() {
               ))}
               <div className="pt-3 border-t border-slate-700 mt-2">
                 <a
-                  href="mailto:sales@TurbineNexus.com"
+                  href="mailto:sales@turbinenexus.com"
                   className="block text-[#F59E0B] text-sm font-medium px-3 py-2"
                 >
-                  sales@TurbineNexus.com
+                  sales@turbinenexus.com
                 </a>
                 <div className="px-3 pt-2">
                   <Button asChild variant="amber" className="w-full">

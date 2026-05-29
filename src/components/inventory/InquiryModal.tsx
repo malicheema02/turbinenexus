@@ -110,8 +110,8 @@ export function InquiryModal({ isOpen, onClose, equipmentId, equipmentTitle }: I
               <p className="text-slate-500 mb-6">
                 Thank you. A member of our team will be in touch within one business day. For urgent
                 enquiries, email{" "}
-                <a href="mailto:sales@TurbineNexus.com" className="text-[#1B3A5C] font-semibold hover:underline">
-                  sales@TurbineNexus.com
+                <a href="mailto:sales@turbinenexus.com" className="text-[#1B3A5C] font-semibold hover:underline">
+                  sales@turbinenexus.com
                 </a>
               </p>
               <Button onClick={handleClose} variant="default">

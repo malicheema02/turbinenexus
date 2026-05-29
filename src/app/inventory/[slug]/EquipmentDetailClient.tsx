@@ -145,10 +145,10 @@ export function EquipmentDetailClient({
                     Arrange Teams Meeting
                   </a>
                 </Button>
-                <a href="mailto:sales@TurbineNexus.com"
+                <a href="mailto:sales@turbinenexus.com"
                   className="flex items-center justify-center gap-2 text-sm text-[#1B3A5C] hover:underline font-medium py-2">
                   <ExternalLink className="w-4 h-4" />
-                  sales@TurbineNexus.com
+                  sales@turbinenexus.com
                 </a>
               </div>
 

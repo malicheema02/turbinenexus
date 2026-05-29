@@ -338,10 +338,10 @@ export default async function HomePage() {
             <p className="text-slate-400 text-sm mt-6">
               Or email us directly:{" "}
               <a
-                href="mailto:sales@TurbineNexus.com"
+                href="mailto:sales@turbinenexus.com"
                 className="text-[#F59E0B] hover:text-[#D97706] font-semibold transition-colors"
               >
-                sales@TurbineNexus.com
+                sales@turbinenexus.com
               </a>
             </p>
           </div>

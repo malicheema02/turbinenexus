@@ -53,10 +53,10 @@ export default function ContactPage() {
                   <p className="text-slate-300 text-sm mb-4">
                     For immediate assistance or urgent asset requirements, contact our sales team directly:
                   </p>
-                  <a href="mailto:sales@TurbineNexus.com"
+                  <a href="mailto:sales@turbinenexus.com"
                     className="flex items-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold px-4 py-3 rounded-xl transition-colors text-sm">
                     <ExternalLink className="w-4 h-4" />
-                    sales@TurbineNexus.com
+                    sales@turbinenexus.com
                   </a>
                   <p className="text-slate-400 text-xs mt-3">Responses within 1 business day. Urgent enquiries prioritised.</p>
                 </div>

@@ -39,10 +39,10 @@ async function getSettings() {
 
 export async function Footer() {
   const s = await getSettings();
-  const linkedinUrl = s.linkedin_url || "#";
-  const telegramUrl = s.telegram_url || "#";
-  const wechatUrl   = s.wechat_id    || "#";
-  const salesEmail  = s.sales_email  || "sales@TurbineNexus.com";
+  const linkedinUrl = s.linkedin_url || "";
+  const telegramUrl = s.telegram_url || "";
+  const wechatUrl   = s.wechat_id    || "";
+  const salesEmail  = s.sales_email  || "sales@turbinenexus.com";
   const infoEmail   = s.info_email   || "info@turbinenexus.com";
   const tagline     = s.footer_tagline || "Global specialists in the relocation and redeployment of surplus power generation equipment.";
   const location    = s.footer_location || "Global Operations — Serving 40+ Countries";
@@ -76,29 +76,28 @@ export async function Footer() {
 
             {/* Social icons */}
             <div className="flex items-center gap-2">
-              {linkedinUrl !== "#" && (
+              {linkedinUrl ? (
                 <a href={linkedinUrl} target="_blank" rel="noopener noreferrer"
                   aria-label="Turbine Nexus on LinkedIn"
                   className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#0A66C2] flex items-center justify-center transition-colors">
-                  <Linkedin className="w-4 h-4 text-slate-400" />
+                  <Linkedin className="w-4 h-4 text-slate-300" />
                 </a>
-              )}
-              {telegramUrl !== "#" && (
+              ) : null}
+              {telegramUrl ? (
                 <a href={telegramUrl} target="_blank" rel="noopener noreferrer"
                   aria-label="Turbine Nexus on Telegram"
                   className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#229ED9] flex items-center justify-center transition-colors">
-                  <TelegramIcon className="w-4 h-4 text-slate-400" />
+                  <TelegramIcon className="w-4 h-4 text-slate-300" />
                 </a>
-              )}
-              {wechatUrl !== "#" && (
+              ) : null}
+              {wechatUrl ? (
                 <a href={wechatUrl} target="_blank" rel="noopener noreferrer"
                   aria-label="Turbine Nexus on WeChat"
                   className="w-8 h-8 rounded-full bg-slate-800 hover:bg-[#07C160] flex items-center justify-center transition-colors">
-                  <WeChatIcon className="w-4 h-4 text-slate-400" />
+                  <WeChatIcon className="w-4 h-4 text-slate-300" />
                 </a>
-              )}
-              {/* Show placeholder icons when no URLs set yet */}
-              {linkedinUrl === "#" && telegramUrl === "#" && wechatUrl === "#" && (
+              ) : null}
+              {!linkedinUrl && !telegramUrl && !wechatUrl && (
                 <span className="text-xs text-slate-600 italic">Add social links in Admin → Site Settings</span>
               )}
             </div>

@@ -251,6 +251,23 @@ async function main() {
     console.log(`✅ Equipment: ${item.title}`);
   }
 
+  // Seed site settings (upsert so re-running is safe)
+  const defaultSettings = [
+    { key: "linkedin_url",     value: "https://www.linkedin.com/company/turbine-nexus/", label: "LinkedIn URL",                    group: "social"  },
+    { key: "telegram_url",     value: "",                                                  label: "Telegram URL / Username",         group: "social"  },
+    { key: "wechat_id",        value: "",                                                  label: "WeChat ID / Link",                group: "social"  },
+    { key: "sales_email",      value: "sales@turbinenexus.com",                           label: "Sales Email",                     group: "contact" },
+    { key: "info_email",       value: "info@turbinenexus.com",                            label: "Info Email",                      group: "contact" },
+    { key: "phone_display",    value: "",                                                  label: "Phone Number (footer)",           group: "contact" },
+    { key: "footer_tagline",   value: "Global specialists in the relocation and redeployment of surplus power generation equipment.", label: "Footer Tagline", group: "general" },
+    { key: "footer_location",  value: "Global Operations — Serving 40+ Countries",        label: "Footer Location Text",            group: "general" },
+    { key: "calendly_url",     value: "",                                                  label: "Calendly / Teams Booking URL",    group: "general" },
+  ];
+  for (const s of defaultSettings) {
+    await prisma.siteSettings.upsert({ where: { key: s.key }, update: {}, create: s });
+  }
+  console.log("⚙️  Site settings seeded");
+
   console.log("🎉 Seed complete!");
 }
 

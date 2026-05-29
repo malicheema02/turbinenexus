@@ -90,6 +90,12 @@ export async function POST(req: NextRequest) {
             companyId: company.id,
           },
         });
+      } else if (!contact.phone && contactPhone) {
+        // Update missing phone number
+        contact = await prisma.contact.update({
+          where: { id: contact.id },
+          data: { phone: contactPhone },
+        });
       }
       contactId = contact.id;
     } catch (crmErr) {

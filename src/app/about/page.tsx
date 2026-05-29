@@ -124,9 +124,9 @@ export default function AboutPage() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { icon: Globe, value: "40+", label: "Countries" },
-                  { icon: TrendingUp, value: "$2B+", label: "Assets Managed" },
+                  { icon: TrendingUp, value: "$800M+", label: "Assets Managed" },
                   { icon: Award, value: "500+ MW", label: "Capacity Brokered" },
-                  { icon: Users, value: "200+", label: "Client Relationships" },
+                  { icon: Users, value: "20+", label: "Clients Served" },
                 ].map((stat) => (
                   <div
                     key={stat.label}
