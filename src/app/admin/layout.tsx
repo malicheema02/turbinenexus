@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { AdminSidebar } from "@/components/admin/Sidebar";
+import { AdminShell } from "@/components/admin/AdminShell";
 
 export default async function AdminLayout({
   children,
@@ -13,12 +13,5 @@ export default async function AdminLayout({
     return <>{children}</>;
   }
 
-  return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
-      <AdminSidebar />
-      <main className="flex-1 ml-64 min-h-screen">
-        {children}
-      </main>
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }
