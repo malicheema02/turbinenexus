@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
 type Setting = { id: string; key: string; value: string; label: string; group: string };
@@ -14,18 +14,38 @@ const GROUP_LABELS: Record<string, string> = {
   integrations: "Integrations & Automation",
 };
 
-// Keys that should render as multi-line textareas.
+const GROUP_ORDER = ["hero", "about", "contact", "social", "general", "integrations"];
+
 const LONG_TEXT_KEYS = new Set(["hero_subheading", "footer_tagline", "contact_address"]);
 
-export function SiteSettingsForm({ byGroup }: { byGroup: Record<string, Setting[]> }) {
-  const [values, setValues] = useState<Record<string, string>>(
-    Object.values(byGroup)
-      .flat()
-      .reduce<Record<string, string>>((a, s) => { a[s.key] = s.value; return a; }, {})
-  );
+export function SiteSettingsForm() {
+  const [byGroup, setByGroup] = useState<Record<string, Setting[]>>({});
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((rows: Setting[]) => {
+        const grouped = rows.reduce<Record<string, Setting[]>>((acc, s) => {
+          (acc[s.group] ??= []).push(s);
+          return acc;
+        }, {});
+        // Sort groups
+        const sorted = Object.fromEntries(
+          Object.entries(grouped).sort(
+            ([a], [b]) => (GROUP_ORDER.indexOf(a) + 1 || 99) - (GROUP_ORDER.indexOf(b) + 1 || 99)
+          )
+        );
+        setByGroup(sorted);
+        setValues(rows.reduce<Record<string, string>>((a, s) => { a[s.key] = s.value; return a; }, {}));
+      })
+      .catch(() => setError("Failed to load settings."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -46,6 +66,15 @@ export function SiteSettingsForm({ byGroup }: { byGroup: Record<string, Setting[
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-slate-500 py-12">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-sm">Loading settings…</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -97,7 +126,7 @@ export function SiteSettingsForm({ byGroup }: { byGroup: Record<string, Setting[
       <div className="flex items-center gap-4">
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || loading}
           className="flex items-center gap-2 px-6 py-2.5 bg-[#1B3A5C] text-white rounded-lg text-sm font-semibold hover:bg-[#152E4A] transition-colors disabled:opacity-60"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
