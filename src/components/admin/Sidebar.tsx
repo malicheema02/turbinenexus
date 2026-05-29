@@ -11,6 +11,9 @@ import {
   LogOut,
   Zap,
   ChevronRight,
+  Building2,
+  Users,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +41,24 @@ const navItems = [
     href: "/admin/inquiries",
     label: "Inquiries / CRM",
     icon: MessageSquare,
+    exact: false,
+  },
+  {
+    href: "/admin/companies",
+    label: "Companies",
+    icon: Building2,
+    exact: false,
+  },
+  {
+    href: "/admin/contacts",
+    label: "Contacts",
+    icon: Users,
+    exact: false,
+  },
+  {
+    href: "/admin/listings",
+    label: "Sell Listings",
+    icon: ClipboardList,
     exact: false,
   },
 ];
