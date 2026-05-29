@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendInquiryNotification, sendInquiryConfirmation } from "@/lib/email";
+import { upsertCompanyAndContact, generateOppNumber } from "@/lib/crm";
+import { dispatchWebhook } from "@/lib/webhook";
 
 const inquirySchema = z.object({
   companyName: z.string().min(2).max(200),
@@ -11,30 +13,12 @@ const inquirySchema = z.object({
   message: z.string().min(10).max(5000),
   equipmentId: z.string().optional(),
   equipmentTitle: z.string().optional(),
+  // Phase 5/6 lead classification
+  inquiryType: z.enum(["Inquiry", "Meeting", "Wanted", "Offer"]).optional(),
+  offerAmount: z.number().optional(),
+  meetingTimezone: z.string().max(64).optional(),
+  priority: z.enum(["Low", "Medium", "High"]).optional(),
 });
-
-async function generateOppNumber(): Promise<string> {
-  const now = new Date();
-  const year = now.getFullYear().toString();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-
-  // Count inquiries created today
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-
-  const todayCount = await prisma.inquiry.count({
-    where: {
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
-  });
-
-  const sequence = String(todayCount + 1).padStart(3, "0");
-  return `OPP${year}${month}${day}${sequence}`;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,9 +40,13 @@ export async function POST(req: NextRequest) {
       message,
       equipmentId,
       equipmentTitle,
+      inquiryType = "Inquiry",
+      offerAmount,
+      meetingTimezone,
+      priority = "Medium",
     } = parsed.data;
 
-    // Verify equipmentId belongs to a real, public asset if provided
+    // Verify equipmentId belongs to a real asset if provided
     let resolvedEquipmentId: string | null = null;
     if (equipmentId) {
       const eq = await prisma.equipment.findUnique({
@@ -69,42 +57,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Auto-create or find Company + Contact (best-effort — never block the inquiry)
-    let contactId: string | null = null;
-    try {
-      const normalizedCompany = companyName.trim();
-      const allCompanies = await prisma.company.findMany({ select: { id: true, name: true } });
-      let company = allCompanies.find(
-        (c) => c.name.toLowerCase() === normalizedCompany.toLowerCase()
-      ) ?? null;
-      if (!company) {
-        company = await prisma.company.create({ data: { name: normalizedCompany } });
-      }
+    const contactId = await upsertCompanyAndContact({
+      companyName,
+      contactName,
+      contactEmail,
+      contactPhone,
+    });
 
-      const normalizedEmail = contactEmail.toLowerCase().trim();
-      const allContacts = await prisma.contact.findMany({ select: { id: true, email: true, phone: true } });
-      let contact = allContacts.find((c) => c.email.toLowerCase() === normalizedEmail) ?? null;
-      if (!contact) {
-        contact = await prisma.contact.create({
-          data: {
-            name: contactName,
-            email: normalizedEmail,
-            phone: contactPhone ?? null,
-            companyId: company.id,
-          },
-        });
-      } else if (!contact.phone && contactPhone) {
-        contact = await prisma.contact.update({
-          where: { id: contact.id },
-          data: { phone: contactPhone },
-        });
-      }
-      contactId = contact.id;
-    } catch (crmErr) {
-      // CRM tables may not exist yet — inquiry still saves successfully
-      console.warn("[POST /api/inquiries] CRM upsert skipped:", crmErr);
-    }
-
-    // Generate OPP number
     const oppNumber = await generateOppNumber();
 
     const inquiry = await prisma.inquiry.create({
@@ -118,7 +77,10 @@ export async function POST(req: NextRequest) {
         equipmentId: resolvedEquipmentId,
         ...(contactId ? { contactId } : {}),
         status: "New",
-        priority: "Medium",
+        priority,
+        inquiryType,
+        ...(offerAmount !== undefined ? { offerAmount } : {}),
+        ...(meetingTimezone ? { meetingTimezone } : {}),
       },
     });
 
@@ -128,6 +90,22 @@ export async function POST(req: NextRequest) {
       sendInquiryNotification({ companyName, contactName, contactEmail, contactPhone, message, equipmentTitle: eqTitle }),
       sendInquiryConfirmation({ companyName, contactName, contactEmail, message, equipmentTitle: eqTitle }),
     ]);
+
+    // Dispatch automation webhook (fire-and-forget)
+    await dispatchWebhook("inquiry.created", {
+      oppNumber,
+      inquiryType,
+      companyName,
+      contactName,
+      contactEmail,
+      contactPhone: contactPhone ?? null,
+      message,
+      equipmentId: resolvedEquipmentId,
+      equipmentTitle: eqTitle,
+      offerAmount: offerAmount ?? null,
+      meetingTimezone: meetingTimezone ?? null,
+      priority,
+    });
 
     return NextResponse.json({ success: true, id: inquiry.id, oppNumber }, { status: 201 });
   } catch (err) {

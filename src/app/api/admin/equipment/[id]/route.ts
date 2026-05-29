@@ -10,6 +10,7 @@ const updateSchema = z.object({
   model: z.string().optional(),
   ratedPowerMW: z.number().optional().nullable(),
   fuelType: z.string().optional().nullable(),
+  frequency: z.string().optional().nullable(),
   yearOfManufacture: z.number().int().optional().nullable(),
   operatingHours: z.number().int().optional().nullable(),
   condition: z.string().optional(),
@@ -19,11 +20,16 @@ const updateSchema = z.object({
   images: z.string().optional(),
   status: z.enum(["Available", "UnderNegotiation", "Sold"]).optional(),
   featured: z.boolean().optional(),
+  showPrice: z.boolean().optional(),
+  price: z.number().optional().nullable(),
+  priceCurrency: z.string().optional(),
+  documentsAvailable: z.boolean().optional(),
   serialNumber: z.string().optional().nullable(),
   internalNotes: z.string().optional().nullable(),
   sellerFloorPrice: z.number().optional().nullable(),
   assetOwnerName: z.string().optional().nullable(),
   assetOwnerContact: z.string().optional().nullable(),
+  documentUrl: z.string().optional().nullable(),
 });
 
 export async function GET(

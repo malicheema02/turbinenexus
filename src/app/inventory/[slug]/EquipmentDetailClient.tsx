@@ -3,13 +3,24 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Users, ExternalLink, Zap, Calendar, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarPlus, ExternalLink, Zap, Calendar, Clock, MapPin, HandCoins, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SpecsTable } from "@/components/inventory/SpecsTable";
 import { InquiryModal } from "@/components/inventory/InquiryModal";
-import { STATUS_LABELS } from "@/lib/utils";
+import { MeetingModal } from "@/components/inventory/MeetingModal";
+import { MakeOfferModal } from "@/components/inventory/MakeOfferModal";
+import { TearSheetButton } from "@/components/inventory/TearSheetButton";
+import { parseJsonSafe, STATUS_LABELS } from "@/lib/utils";
 import type { PublicEquipmentRow } from "@/lib/queries";
+
+function formatPrice(price: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(price);
+  } catch {
+    return `${currency} ${price.toLocaleString()}`;
+  }
+}
 
 const statusVariant: Record<string, "success" | "warning" | "secondary"> = {
   Available: "success",
@@ -33,7 +44,14 @@ export function EquipmentDetailClient({
   images: string[];
 }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
+
+  const isSold = equipment.status === "Sold";
+  const showPrice = equipment.showPrice && equipment.price != null;
+  const currency = equipment.priceCurrency ?? "USD";
+  const parsedSpecs = parseJsonSafe<{ key: string; value: string }[]>(equipment.keySpecs, []);
 
   return (
     <>
@@ -133,18 +151,59 @@ export function EquipmentDetailClient({
                 )}
               </div>
 
+              {/* Pricing */}
+              <div className="mb-5 pb-5 border-b border-slate-100">
+                {showPrice ? (
+                  <>
+                    <span className="text-xs text-slate-400 uppercase tracking-wide">List Price</span>
+                    <div className="text-3xl font-extrabold text-[#1B3A5C]">{formatPrice(equipment.price as number, currency)}</div>
+                  </>
+                ) : (
+                  <div className="text-lg font-semibold text-slate-500">Price on Request</div>
+                )}
+              </div>
+
               <div className="space-y-3">
                 <Button variant="amber" className="w-full" size="lg"
                   onClick={() => setModalOpen(true)}
-                  disabled={equipment.status === "Sold"}>
-                  Inquire About This Unit
+                  disabled={isSold}>
+                  {showPrice ? "Get Quote / Inquire" : "Inquire About This Unit"}
                 </Button>
-                <Button variant="outline" className="w-full" size="lg" asChild>
-                  <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Arrange Teams Meeting
-                  </a>
+
+                {showPrice && (
+                  <Button variant="default" className="w-full" size="lg"
+                    onClick={() => setOfferOpen(true)} disabled={isSold}>
+                    <HandCoins className="w-4 h-4" /> Make an Offer
+                  </Button>
+                )}
+
+                <Button variant="outline" className="w-full" size="lg"
+                  onClick={() => setMeetingOpen(true)} disabled={isSold}>
+                  <CalendarPlus className="w-4 h-4" /> Arrange Meeting
                 </Button>
+
+                {/* Executive tear-sheet — public fields only */}
+                <TearSheetButton
+                  equipment={{
+                    title: equipment.title,
+                    manufacturer: equipment.manufacturer,
+                    model: equipment.model,
+                    equipmentType: typeLabels[equipment.equipmentType] ?? equipment.equipmentType,
+                    ratedPowerMW: equipment.ratedPowerMW,
+                    fuelType: equipment.fuelType,
+                    frequency: equipment.frequency,
+                    yearOfManufacture: equipment.yearOfManufacture,
+                    operatingHours: equipment.operatingHours,
+                    condition: equipment.condition,
+                    location: equipment.location,
+                    description: equipment.description,
+                    keySpecs: parsedSpecs,
+                    price: equipment.price,
+                    showPrice: equipment.showPrice,
+                    priceCurrency: currency,
+                  }}
+                />
+
                 <a href="mailto:sales@turbinenexus.com"
                   className="flex items-center justify-center gap-2 text-sm text-[#1B3A5C] hover:underline font-medium py-2">
                   <ExternalLink className="w-4 h-4" />
@@ -152,10 +211,24 @@ export function EquipmentDetailClient({
                 </a>
               </div>
 
+              {/* Document data room indicator */}
+              {equipment.documentsAvailable && (
+                <div className="mt-4 flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
+                  <FileText className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    Technical documents (borescope, maintenance logs) available upon NDA /{" "}
+                    <button onClick={() => setModalOpen(true)} className="underline font-semibold">request</button>.
+                  </span>
+                </div>
+              )}
+
               <div className="mt-4 p-3 bg-[#F8FAFC] rounded-xl border border-slate-200 text-xs text-slate-500 text-center">
                 Condition: <span className="font-semibold text-slate-700">{equipment.condition}</span>
                 {equipment.fuelType && (
                   <><span className="mx-2">·</span>Fuel: <span className="font-semibold text-slate-700">{equipment.fuelType}</span></>
+                )}
+                {equipment.frequency && (
+                  <><span className="mx-2">·</span>Freq: <span className="font-semibold text-slate-700">{equipment.frequency}</span></>
                 )}
               </div>
             </div>
@@ -175,6 +248,20 @@ export function EquipmentDetailClient({
         onClose={() => setModalOpen(false)}
         equipmentId={equipment.id}
         equipmentTitle={equipment.title}
+      />
+      <MeetingModal
+        isOpen={meetingOpen}
+        onClose={() => setMeetingOpen(false)}
+        equipmentId={equipment.id}
+        equipmentTitle={equipment.title}
+      />
+      <MakeOfferModal
+        isOpen={offerOpen}
+        onClose={() => setOfferOpen(false)}
+        equipmentId={equipment.id}
+        equipmentTitle={equipment.title}
+        listPrice={equipment.price}
+        currency={currency}
       />
     </>
   );

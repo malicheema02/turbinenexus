@@ -53,6 +53,9 @@ export interface PublicInquiry {
   status: string;
   priority: string;
   assignedTo: string | null;
+  inquiryType?: string;
+  offerAmount?: number | null;
+  meetingTimezone?: string | null;
   communicationLog: string | null;
   internalNotes: string | null;
   createdAt: string;

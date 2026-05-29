@@ -18,6 +18,7 @@ model Equipment {
   model             String
   ratedPowerMW      Float?
   fuelType          String?
+  frequency         String? // "50 Hz" | "60 Hz"
   yearOfManufacture Int?
   operatingHours    Int?
   condition         String
@@ -28,12 +29,21 @@ model Equipment {
   status            String  @default("Available")
   featured          Boolean @default(false)
 
+  // ── PRICING (public-facing toggle) ──
+  showPrice         Boolean @default(false)
+  price             Float?  // displayed only when showPrice = true
+  priceCurrency     String  @default("USD")
+
+  // ── DOCUMENT DATA ROOM ──
+  documentsAvailable Boolean @default(false) // shows public "docs available upon NDA" indicator
+
   // ── PRIVATE FIELDS ── admin-only, never in public API
   serialNumber      String?
   internalNotes     String?
   sellerFloorPrice  Float?
   assetOwnerName    String?
   assetOwnerContact String?
+  documentUrl       String? // private link to confidential document data room
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -85,6 +95,11 @@ model Inquiry {
   status       String     @default("New")
   priority     String     @default("Medium")
   assignedTo   String?
+
+  // Inquiry classification & negotiation
+  inquiryType  String     @default("Inquiry") // "Inquiry" | "Meeting" | "Wanted" | "Offer"
+  offerAmount  Float?     // populated by "Make an Offer" flow
+  meetingTimezone String? // captured from "Arrange Meeting" flow (e.g. "Asia/Dubai")
 
   // Stored as JSON: { timestamp, author, note }[]
   communicationLog String?

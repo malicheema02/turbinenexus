@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { upsertCompanyAndContact } from "@/lib/crm";
+import { dispatchWebhook } from "@/lib/webhook";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,41 +33,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Auto-create/update Company + Contact in CRM
-    try {
-      const normalizedCompany = (body.companyName as string).trim();
-      const allCompanies = await prisma.company.findMany({ select: { id: true, name: true } });
-      let company = allCompanies.find(
-        (c) => c.name.toLowerCase() === normalizedCompany.toLowerCase()
-      ) ?? null;
-      if (!company) {
-        company = await prisma.company.create({ data: { name: normalizedCompany } });
-      }
+    // Auto-create/update Company + Contact in CRM (shared dedup logic)
+    await upsertCompanyAndContact({
+      companyName: body.companyName,
+      contactName: body.contactName,
+      contactEmail: body.contactEmail,
+      contactPhone: body.contactPhone,
+      jobTitle: "Equipment Owner",
+    });
 
-      const normalizedEmail = (body.contactEmail as string).toLowerCase().trim();
-      const allContacts = await prisma.contact.findMany({ select: { id: true, email: true, phone: true } });
-      const existing = allContacts.find((c) => c.email.toLowerCase() === normalizedEmail) ?? null;
-      if (existing) {
-        if (!existing.phone && body.contactPhone) {
-          await prisma.contact.update({
-            where: { id: existing.id },
-            data: { phone: body.contactPhone },
-          });
-        }
-      } else {
-        await prisma.contact.create({
-          data: {
-            name: body.contactName,
-            email: normalizedEmail,
-            phone: body.contactPhone,
-            companyId: company.id,
-            jobTitle: "Equipment Owner",
-          },
-        });
-      }
-    } catch (crmErr) {
-      console.warn("[sell-equipment] CRM upsert skipped:", crmErr);
-    }
+    await dispatchWebhook("listing.created", {
+      id: listing.id,
+      companyName: body.companyName,
+      contactName: body.contactName,
+      contactEmail: body.contactEmail,
+      contactPhone: body.contactPhone,
+      equipmentType: body.equipmentType,
+      manufacturer: body.manufacturer ?? null,
+      model: body.model ?? null,
+      askingPrice: body.askingPrice ?? null,
+    });
 
     return NextResponse.json({ success: true, id: listing.id }, { status: 201 });
   } catch {

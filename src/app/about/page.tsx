@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Shield, Target, Globe, Users, Award, TrendingUp } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { getSettingsMap } from "@/lib/settings";
 
 export const metadata: Metadata = {
   title: "About Us — Turbine Nexus",
@@ -62,7 +63,14 @@ const values = [
   },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const settings = await getSettingsMap();
+  const aboutStats = [
+    { icon: Globe, value: settings.get("about_stat_countries")?.trim() || "40+", label: "Countries" },
+    { icon: TrendingUp, value: settings.get("about_stat_value")?.trim() || "$800M+", label: "Assets Managed" },
+    { icon: Award, value: settings.get("about_stat_mw")?.trim() || "500+ MW", label: "Capacity Brokered" },
+    { icon: Users, value: settings.get("about_stat_clients")?.trim() || "20+", label: "Clients Served" },
+  ];
   return (
     <>
       <Navbar />
@@ -122,12 +130,7 @@ export default function AboutPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {[
-                  { icon: Globe, value: "40+", label: "Countries" },
-                  { icon: TrendingUp, value: "$800M+", label: "Assets Managed" },
-                  { icon: Award, value: "500+ MW", label: "Capacity Brokered" },
-                  { icon: Users, value: "20+", label: "Clients Served" },
-                ].map((stat) => (
+                {aboutStats.map((stat) => (
                   <div
                     key={stat.label}
                     className="bg-[#F8FAFC] rounded-2xl p-6 border border-slate-200 text-center"

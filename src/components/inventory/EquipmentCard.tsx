@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Clock, Zap, Calendar } from "lucide-react";
+import { MapPin, Clock, Zap, Calendar, CalendarPlus, HandCoins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { parseJsonSafe, STATUS_LABELS } from "@/lib/utils";
@@ -9,7 +9,8 @@ import type { PublicEquipmentRow } from "@/lib/queries";
 interface EquipmentCardProps {
   equipment: PublicEquipmentRow;
   onInquire?: (id: string, title: string) => void;
-  teamsLink?: string;
+  onMeeting?: (id: string, title: string) => void;
+  onOffer?: (id: string, title: string, price: number | null, currency: string) => void;
   priority?: boolean;
 }
 
@@ -27,10 +28,31 @@ const typeLabels: Record<string, string> = {
   Other: "Equipment",
 };
 
-export function EquipmentCard({ equipment, onInquire, teamsLink = "#", priority = false }: EquipmentCardProps) {
+function formatPrice(price: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(price);
+  } catch {
+    return `${currency} ${price.toLocaleString()}`;
+  }
+}
+
+// Stop the parent full-card link from firing when a CTA button is clicked.
+const stop = (e: React.MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+};
+
+export function EquipmentCard({ equipment, onInquire, onMeeting, onOffer, priority = false }: EquipmentCardProps) {
   const images = parseJsonSafe<string[]>(equipment.images, []);
   const firstImage = images[0];
   const detailUrl = `/inventory/${equipment.slug}`;
+  const isSold = equipment.status === "Sold";
+  const showPrice = equipment.showPrice && equipment.price != null;
+  const currency = equipment.priceCurrency ?? "USD";
 
   return (
     <article className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group">
@@ -60,9 +82,7 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#", priority 
         </div>
         {equipment.featured && (
           <div className="absolute top-3 right-3 z-10">
-            <Badge variant="default" className="bg-[#F59E0B] text-white">
-              Featured
-            </Badge>
+            <Badge variant="default" className="bg-[#F59E0B] text-white">Featured</Badge>
           </div>
         )}
       </div>
@@ -87,6 +107,12 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#", priority 
               <span className="font-semibold">{equipment.ratedPowerMW} MW</span>
             </div>
           )}
+          {equipment.frequency && (
+            <div className="flex items-center gap-1.5 text-sm text-slate-600">
+              <span className="text-[#1B3A5C] font-semibold">⎓</span>
+              <span>{equipment.frequency}</span>
+            </div>
+          )}
           {equipment.yearOfManufacture && (
             <div className="flex items-center gap-1.5 text-sm text-slate-600">
               <Calendar className="w-4 h-4 text-[#1B3A5C]" />
@@ -107,9 +133,21 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#", priority 
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 mb-4">
+        <div className="flex items-center gap-1.5 mb-3">
           <span className="text-xs text-slate-500">Condition:</span>
           <span className="text-xs font-semibold text-slate-700">{equipment.condition}</span>
+        </div>
+
+        {/* Pricing */}
+        <div className="mb-4 pb-4 border-b border-slate-100">
+          {showPrice ? (
+            <div>
+              <span className="text-xs text-slate-400 uppercase tracking-wide">List Price</span>
+              <div className="text-xl font-bold text-[#1B3A5C]">{formatPrice(equipment.price as number, currency)}</div>
+            </div>
+          ) : (
+            <div className="text-sm font-semibold text-slate-500">Price on Request</div>
+          )}
         </div>
 
         {/* CTAs */}
@@ -118,23 +156,39 @@ export function EquipmentCard({ equipment, onInquire, teamsLink = "#", priority 
             <Button
               variant="amber"
               className="w-full relative z-10"
-              onClick={(e) => { e.preventDefault(); onInquire(equipment.id, equipment.title); }}
-              disabled={equipment.status === "Sold"}
+              onClick={(e) => { stop(e); onInquire(equipment.id, equipment.title); }}
+              disabled={isSold}
             >
-              Inquire About This Unit
+              {showPrice ? "Get Quote / Inquire" : "Inquire About This Unit"}
             </Button>
           )}
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 relative z-10" asChild>
-              <Link href={detailUrl}>View Details</Link>
+
+          {showPrice && onOffer && (
+            <Button
+              variant="default"
+              className="w-full relative z-10"
+              onClick={(e) => { stop(e); onOffer(equipment.id, equipment.title, equipment.price as number, currency); }}
+              disabled={isSold}
+            >
+              <HandCoins className="w-4 h-4" /> Make an Offer
             </Button>
-            {teamsLink !== "#" && (
-              <Button variant="secondary" size="sm" className="flex-1 relative z-10" asChild>
-                <a href={teamsLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                  Teams Meeting
-                </a>
+          )}
+
+          <div className="flex gap-2">
+            {onMeeting && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 relative z-10"
+                onClick={(e) => { stop(e); onMeeting(equipment.id, equipment.title); }}
+                disabled={isSold}
+              >
+                <CalendarPlus className="w-3.5 h-3.5" /> Arrange Meeting
               </Button>
             )}
+            <Button variant="secondary" size="sm" className="flex-1 relative z-10" asChild>
+              <Link href={detailUrl}>View Details</Link>
+            </Button>
           </div>
         </div>
       </div>

@@ -17,13 +17,20 @@ const equipmentFormSchema = z.object({
   model: z.string().min(1, "Model required"),
   ratedPowerMW: z.coerce.number().optional(),
   fuelType: z.string().optional(),
+  frequency: z.string().optional(),
   yearOfManufacture: z.coerce.number().int().min(1950).max(2030).optional(),
   operatingHours: z.coerce.number().int().min(0).optional(),
-  condition: z.enum(["Excellent", "Good", "Fair", "For Parts"]),
+  condition: z.string().min(1, "Condition required"),
   location: z.string().optional(),
   description: z.string().min(10, "Description required"),
   status: z.enum(["Available", "UnderNegotiation", "Sold"]),
   featured: z.boolean().default(false),
+  // Pricing (public)
+  showPrice: z.boolean().default(false),
+  price: z.coerce.number().optional(),
+  priceCurrency: z.string().default("USD"),
+  // Document data room
+  documentsAvailable: z.boolean().default(false),
   images: z.array(z.object({ url: z.string().url("Valid URL required") })).default([]),
   keySpecs: z.array(z.object({ key: z.string().min(1), value: z.string().min(1) })).default([]),
   // Private fields
@@ -32,7 +39,13 @@ const equipmentFormSchema = z.object({
   sellerFloorPrice: z.coerce.number().optional(),
   assetOwnerName: z.string().optional(),
   assetOwnerContact: z.string().optional(),
+  documentUrl: z.string().optional(),
 });
+
+const CONDITION_OPTIONS = ["New / Unused", "Zero-Hour Refurbished", "Surplus", "Used", "Excellent", "Good", "Fair", "For Parts"];
+const FUEL_OPTIONS = ["Natural Gas", "Diesel", "HFO", "Dual Fuel", "Hydrogen-Ready", "Steam", "Other"];
+const FREQUENCY_OPTIONS = ["50 Hz", "60 Hz"];
+const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "AED"];
 
 type EquipmentFormValues = z.infer<typeof equipmentFormSchema>;
 
@@ -66,6 +79,9 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
       condition: "Good",
       equipmentType: "GasTurbine",
       featured: false,
+      showPrice: false,
+      priceCurrency: "USD",
+      documentsAvailable: false,
       images: [],
       keySpecs: [{ key: "", value: "" }],
     },
@@ -219,19 +235,27 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
           </div>
           <div>
             <label className={labelClass}>Fuel Type</label>
-            <Input {...register("fuelType")} placeholder="e.g. Natural Gas" />
+            <select {...register("fuelType")} className={fieldClass()}>
+              <option value="">Select fuel type</option>
+              {FUEL_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div>
+            <label className={labelClass}>Frequency</label>
+            <select {...register("frequency")} className={fieldClass()}>
+              <option value="">Select frequency</option>
+              {FREQUENCY_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
           <div>
             <label className={labelClass}>Condition *</label>
-            <select {...register("condition")} className={fieldClass()}>
-              <option value="Excellent">Excellent</option>
-              <option value="Good">Good</option>
-              <option value="Fair">Fair</option>
-              <option value="For Parts">For Parts</option>
+            <select {...register("condition")} className={fieldClass(!!errors.condition)}>
+              {CONDITION_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+            {errors.condition && <p className={errorClass}>{errors.condition.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Location (Country/Region)</label>
@@ -316,6 +340,48 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
         </div>
       </div>
 
+      {/* Pricing */}
+      <div className={sectionClass}>
+        <h2 className="text-lg font-bold text-[#0F172A] pb-2 border-b border-slate-100">
+          Pricing
+          <span className="text-xs font-normal text-slate-400 ml-2">Controls public price display</span>
+        </h2>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="showPrice"
+            {...register("showPrice")}
+            className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]"
+          />
+          <label htmlFor="showPrice" className="text-sm font-medium text-slate-700">
+            Show price publicly (enables &quot;Make an Offer&quot;). If off, the public page shows &quot;Price on Request&quot;.
+          </label>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className={labelClass}>List Price (public)</label>
+            <Input type="number" step="1000" {...register("price")} placeholder="e.g. 4500000" />
+          </div>
+          <div>
+            <label className={labelClass}>Currency</label>
+            <select {...register("priceCurrency")} className={fieldClass()}>
+              {CURRENCY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 pt-1">
+          <input
+            type="checkbox"
+            id="documentsAvailable"
+            {...register("documentsAvailable")}
+            className="w-4 h-4 rounded border-slate-300 text-[#1B3A5C] focus:ring-[#1B3A5C]"
+          />
+          <label htmlFor="documentsAvailable" className="text-sm font-medium text-slate-700">
+            Technical documents available (shows &quot;Documents available upon NDA/Request&quot; on the public page)
+          </label>
+        </div>
+      </div>
+
       {/* Private / Internal Fields */}
       <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6 space-y-5">
         <h2 className="text-lg font-bold text-amber-900 pb-2 border-b border-amber-200 flex items-center gap-2">
@@ -346,6 +412,12 @@ export function EquipmentForm({ mode, equipmentId, defaultValues }: EquipmentFor
             <label className={labelClass}>Asset Owner Contact (PRIVATE)</label>
             <Input {...register("assetOwnerContact")} placeholder="Email or phone" />
           </div>
+        </div>
+
+        <div>
+          <label className={labelClass}>Confidential Document URL (PRIVATE)</label>
+          <Input {...register("documentUrl")} placeholder="e.g. Google Drive / Dropbox link to borescope, maintenance logs" />
+          <p className="text-xs text-amber-600 mt-1">Stored for admin reference only. Never exposed publicly — buyers must request access.</p>
         </div>
 
         <div>

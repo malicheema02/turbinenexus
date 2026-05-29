@@ -25,10 +25,28 @@ const equipmentTypes = [
 
 const conditions = [
   { value: "", label: "Any Condition" },
+  { value: "New / Unused", label: "New / Unused" },
+  { value: "Zero-Hour Refurbished", label: "Zero-Hour Refurbished" },
+  { value: "Surplus", label: "Surplus" },
+  { value: "Used", label: "Used" },
   { value: "Excellent", label: "Excellent" },
   { value: "Good", label: "Good" },
   { value: "Fair", label: "Fair" },
-  { value: "For Parts", label: "For Parts" },
+];
+
+const fuelTypes = [
+  { value: "", label: "Any Fuel Type" },
+  { value: "Natural Gas", label: "Natural Gas" },
+  { value: "Diesel", label: "Diesel" },
+  { value: "HFO", label: "HFO (Heavy Fuel Oil)" },
+  { value: "Dual Fuel", label: "Dual Fuel" },
+  { value: "Hydrogen-Ready", label: "Hydrogen-Ready" },
+];
+
+const frequencies = [
+  { value: "", label: "Any Frequency" },
+  { value: "50 Hz", label: "50 Hz" },
+  { value: "60 Hz", label: "60 Hz" },
 ];
 
 const statuses = [
@@ -68,6 +86,10 @@ export function EquipmentFilters() {
     searchParams.has("manufacturer") ||
     searchParams.has("type") ||
     searchParams.has("condition") ||
+    searchParams.has("fuel") ||
+    searchParams.has("frequency") ||
+    searchParams.has("minMW") ||
+    searchParams.has("maxMW") ||
     searchParams.has("status") ||
     searchParams.has("q");
 
@@ -155,6 +177,64 @@ export function EquipmentFilters() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Fuel Type */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            Fuel Type
+          </label>
+          <select
+            value={searchParams.get("fuel") ?? ""}
+            onChange={(e) => updateParam("fuel", e.target.value)}
+            className="w-full py-2.5 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] bg-white"
+          >
+            {fuelTypes.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Frequency */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            Frequency
+          </label>
+          <select
+            value={searchParams.get("frequency") ?? ""}
+            onChange={(e) => updateParam("frequency", e.target.value)}
+            className="w-full py-2.5 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] bg-white"
+          >
+            {frequencies.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Capacity (MW) range */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            Capacity (MW)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              placeholder="Min"
+              defaultValue={searchParams.get("minMW") ?? ""}
+              onChange={(e) => updateParam("minMW", e.target.value)}
+              className="w-full py-2.5 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] bg-white"
+            />
+            <span className="text-slate-400 text-sm">–</span>
+            <input
+              type="number"
+              min={0}
+              placeholder="Max"
+              defaultValue={searchParams.get("maxMW") ?? ""}
+              onChange={(e) => updateParam("maxMW", e.target.value)}
+              className="w-full py-2.5 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] bg-white"
+            />
+          </div>
         </div>
 
         {/* Status */}

@@ -23,7 +23,7 @@ import {
 } from "@/lib/utils";
 import type { PublicInquiry } from "@/types";
 
-const STATUSES = ["New", "Contacted", "MeetingScheduled", "OfferMade", "Closed", "Lost"];
+const STATUSES = ["New", "Contacted", "MeetingScheduled", "OfferReceived", "CounterOfferSent", "UnderNDA", "Closed", "Lost"];
 const PRIORITIES = ["Low", "Medium", "High"];
 
 export default function InquiryDetailPage() {
@@ -110,7 +110,19 @@ export default function InquiryDetailPage() {
           <h1 className="text-2xl font-bold text-[#0F172A]">
             {inquiry.companyName}
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">Inquiry #{inquiry.id.slice(-8)}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-slate-500 text-sm">Inquiry #{inquiry.id.slice(-8)}</p>
+            {inquiry.inquiryType && inquiry.inquiryType !== "Inquiry" && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1B3A5C]/10 text-[#1B3A5C]">
+                {inquiry.inquiryType === "Wanted" ? "Capacity Wanted" : inquiry.inquiryType}
+              </span>
+            )}
+            {inquiry.offerAmount != null && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                Offer: {inquiry.offerAmount.toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

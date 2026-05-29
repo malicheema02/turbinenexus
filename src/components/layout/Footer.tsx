@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Zap, Mail, Phone, MapPin, ExternalLink, Linkedin } from "lucide-react";
+import { Mail, Phone, MapPin, ExternalLink, Linkedin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { Logo } from "@/components/layout/Logo";
 
 function TelegramIcon({ className }: { className?: string }) {
   return (
@@ -46,6 +47,9 @@ export async function Footer() {
   const infoEmail   = s.info_email   || "info@turbinenexus.com";
   const tagline     = s.footer_tagline || "Global specialists in the relocation and redeployment of surplus power generation equipment.";
   const location    = s.footer_location || "Global Operations — Serving 40+ Countries";
+  const phone       = s.phone_display || "";
+  const phoneSecondary = s.phone_secondary || "";
+  const address     = s.contact_address || "";
   return (
     <footer className="bg-[#0F172A] text-slate-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,14 +57,8 @@ export async function Footer() {
         <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 bg-[#F59E0B] rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-white font-bold text-lg tracking-tight">TURBINE</span>
-                <span className="text-[#F59E0B] font-semibold text-xs tracking-[0.2em] -mt-0.5">NEXUS</span>
-              </div>
+            <Link href="/" className="inline-flex mb-4">
+              <Logo variant="light" size={40} />
             </Link>
             <p className="text-sm leading-relaxed text-slate-400 mb-5">{tagline}</p>
             <div className="flex flex-col gap-2.5 mb-5">
@@ -174,14 +172,25 @@ export async function Footer() {
             <div className="space-y-2.5 text-sm">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-slate-500" />
-                <span>{location}</span>
+                <span>{address || location}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 shrink-0 text-slate-500" />
-                <Link href="/contact" className="hover:text-white transition-colors">
-                  Request callback
-                </Link>
-              </div>
+              {phone ? (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 shrink-0 text-slate-500" />
+                  <a href={`tel:${phone.replace(/\s+/g, "")}`} className="hover:text-white transition-colors">{phone}</a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 shrink-0 text-slate-500" />
+                  <Link href="/contact" className="hover:text-white transition-colors">Request callback</Link>
+                </div>
+              )}
+              {phoneSecondary && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 shrink-0 text-slate-500" />
+                  <a href={`tel:${phoneSecondary.replace(/\s+/g, "")}`} className="hover:text-white transition-colors">{phoneSecondary}</a>
+                </div>
+              )}
             </div>
           </div>
         </div>

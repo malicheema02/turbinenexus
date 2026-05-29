@@ -29,11 +29,17 @@ function getParam(params: Record<string, string | string[] | undefined>, key: st
 }
 
 export default function InventoryPage({ searchParams }: PageProps) {
+  const minMW = getParam(searchParams, "minMW");
+  const maxMW = getParam(searchParams, "maxMW");
   const filters = {
     manufacturer: getParam(searchParams, "manufacturer"),
     equipmentType: getParam(searchParams, "type"),
     condition: getParam(searchParams, "condition"),
+    fuelType: getParam(searchParams, "fuel"),
+    frequency: getParam(searchParams, "frequency"),
     status: getParam(searchParams, "status"),
+    minPowerMW: minMW ? parseFloat(minMW) : undefined,
+    maxPowerMW: maxMW ? parseFloat(maxMW) : undefined,
     search: getParam(searchParams, "q"),
     page: parseInt(getParam(searchParams, "page") ?? "1", 10),
   };

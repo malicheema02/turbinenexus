@@ -6,10 +6,16 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 type Setting = { id: string; key: string; value: string; label: string; group: string };
 
 const GROUP_LABELS: Record<string, string> = {
-  social: "Social Media Links",
+  hero: "Homepage Hero Content",
+  about: "About Page — Company Statistics",
   contact: "Contact Details",
+  social: "Social Media Links",
   general: "General / Footer Content",
+  integrations: "Integrations & Automation",
 };
+
+// Keys that should render as multi-line textareas.
+const LONG_TEXT_KEYS = new Set(["hero_subheading", "footer_tagline", "contact_address"]);
 
 export function SiteSettingsForm({ byGroup }: { byGroup: Record<string, Setting[]> }) {
   const [values, setValues] = useState<Record<string, string>>(
@@ -56,18 +62,27 @@ export function SiteSettingsForm({ byGroup }: { byGroup: Record<string, Setting[
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   {s.label}
                 </label>
-                <input
-                  type="text"
-                  value={values[s.key] ?? ""}
-                  onChange={(e) => setValues((v) => ({ ...v, [s.key]: e.target.value }))}
-                  placeholder={s.key.includes("url") ? "https://..." : s.key.includes("email") ? "email@example.com" : ""}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] focus:border-transparent"
-                />
-                {s.key === "calendly_url" && (
-                  <p className="text-xs text-slate-400 mt-1">Used for the "Arrange Teams Meeting" button on inventory cards.</p>
+                {LONG_TEXT_KEYS.has(s.key) ? (
+                  <textarea
+                    rows={3}
+                    value={values[s.key] ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [s.key]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] focus:border-transparent"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={values[s.key] ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [s.key]: e.target.value }))}
+                    placeholder={s.key.includes("url") ? "https://..." : s.key.includes("email") ? "email@example.com" : ""}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A5C] focus:border-transparent"
+                  />
+                )}
+                {s.key === "webhook_url" && (
+                  <p className="text-xs text-slate-400 mt-1">New inquiries & "Need Capacity Fast" leads are POSTed here as JSON for n8n / Zapier / Make.</p>
                 )}
                 {(s.key === "linkedin_url" || s.key === "telegram_url" || s.key === "wechat_id") && (
-                  <p className="text-xs text-slate-400 mt-1">Paste the full URL or leave # to hide the icon.</p>
+                  <p className="text-xs text-slate-400 mt-1">Paste the full URL. Leave empty to hide the icon in the footer.</p>
                 )}
               </div>
             ))}

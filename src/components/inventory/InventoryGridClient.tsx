@@ -5,6 +5,8 @@ import Link from "next/link";
 import { PackageSearch } from "lucide-react";
 import { EquipmentCard } from "@/components/inventory/EquipmentCard";
 import { InquiryModal } from "@/components/inventory/InquiryModal";
+import { MeetingModal } from "@/components/inventory/MeetingModal";
+import { MakeOfferModal } from "@/components/inventory/MakeOfferModal";
 import { Button } from "@/components/ui/button";
 import type { PublicEquipmentRow, EquipmentFilters } from "@/lib/queries";
 
@@ -16,6 +18,8 @@ interface InventoryGridClientProps {
   filters: EquipmentFilters;
 }
 
+type Selected = { id: string; title: string; price?: number | null; currency?: string } | null;
+
 export function InventoryGridClient({
   items,
   total,
@@ -23,15 +27,15 @@ export function InventoryGridClient({
   totalPages,
   filters,
 }: InventoryGridClientProps) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedEquipment, setSelectedEquipment] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
+  const [inquireOpen, setInquireOpen] = useState(false);
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [selected, setSelected] = useState<Selected>(null);
 
-  const handleInquire = (id: string, title: string) => {
-    setSelectedEquipment({ id, title });
-    setModalOpen(true);
+  const handleInquire = (id: string, title: string) => { setSelected({ id, title }); setInquireOpen(true); };
+  const handleMeeting = (id: string, title: string) => { setSelected({ id, title }); setMeetingOpen(true); };
+  const handleOffer = (id: string, title: string, price: number | null, currency: string) => {
+    setSelected({ id, title, price, currency }); setOfferOpen(true);
   };
 
   const buildPageUrl = (newPage: number) => {
@@ -39,7 +43,11 @@ export function InventoryGridClient({
     if (filters.manufacturer) params.set("manufacturer", filters.manufacturer);
     if (filters.equipmentType) params.set("type", filters.equipmentType);
     if (filters.condition) params.set("condition", filters.condition);
+    if (filters.fuelType) params.set("fuel", filters.fuelType);
+    if (filters.frequency) params.set("frequency", filters.frequency);
     if (filters.status) params.set("status", filters.status);
+    if (filters.minPowerMW !== undefined) params.set("minMW", String(filters.minPowerMW));
+    if (filters.maxPowerMW !== undefined) params.set("maxMW", String(filters.maxPowerMW));
     if (filters.search) params.set("q", filters.search);
     if (newPage > 1) params.set("page", String(newPage));
     const qs = params.toString();
@@ -81,6 +89,8 @@ export function InventoryGridClient({
               key={item.id}
               equipment={item}
               onInquire={handleInquire}
+              onMeeting={handleMeeting}
+              onOffer={handleOffer}
             />
           ))}
         </div>
@@ -105,11 +115,15 @@ export function InventoryGridClient({
         </div>
       )}
 
-      <InquiryModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        equipmentId={selectedEquipment?.id}
-        equipmentTitle={selectedEquipment?.title}
+      <InquiryModal isOpen={inquireOpen} onClose={() => setInquireOpen(false)} equipmentId={selected?.id} equipmentTitle={selected?.title} />
+      <MeetingModal isOpen={meetingOpen} onClose={() => setMeetingOpen(false)} equipmentId={selected?.id} equipmentTitle={selected?.title} />
+      <MakeOfferModal
+        isOpen={offerOpen}
+        onClose={() => setOfferOpen(false)}
+        equipmentId={selected?.id}
+        equipmentTitle={selected?.title}
+        listPrice={selected?.price ?? null}
+        currency={selected?.currency ?? "USD"}
       />
     </>
   );

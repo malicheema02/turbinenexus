@@ -14,6 +14,7 @@ export const PUBLIC_EQUIPMENT_SELECT = {
   model: true,
   ratedPowerMW: true,
   fuelType: true,
+  frequency: true,
   yearOfManufacture: true,
   operatingHours: true,
   condition: true,
@@ -23,6 +24,10 @@ export const PUBLIC_EQUIPMENT_SELECT = {
   images: true,
   status: true,
   featured: true,
+  showPrice: true,
+  price: true,
+  priceCurrency: true,
+  documentsAvailable: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -35,6 +40,8 @@ export interface EquipmentFilters {
   manufacturer?: string;
   equipmentType?: string;
   condition?: string;
+  fuelType?: string;
+  frequency?: string;
   status?: string;
   minPowerMW?: number;
   maxPowerMW?: number;
@@ -49,6 +56,8 @@ export async function findPublicEquipment(filters: EquipmentFilters = {}) {
     manufacturer,
     equipmentType,
     condition,
+    fuelType,
+    frequency,
     status,
     minPowerMW,
     maxPowerMW,
@@ -63,6 +72,8 @@ export async function findPublicEquipment(filters: EquipmentFilters = {}) {
   if (manufacturer) where.manufacturer = { contains: manufacturer };
   if (equipmentType) where.equipmentType = equipmentType;
   if (condition) where.condition = condition;
+  if (fuelType) where.fuelType = { contains: fuelType };
+  if (frequency) where.frequency = frequency;
   if (status) where.status = status;
   if (featured !== undefined) where.featured = featured;
   if (minPowerMW !== undefined || maxPowerMW !== undefined) {

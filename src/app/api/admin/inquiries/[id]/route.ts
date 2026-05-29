@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
 const updateSchema = z.object({
-  status: z.enum(["New", "Contacted", "MeetingScheduled", "OfferMade", "Closed", "Lost"]).optional(),
+  status: z.enum([
+    "New", "Contacted", "MeetingScheduled",
+    "OfferReceived", "CounterOfferSent", "UnderNDA",
+    "OfferMade", "Closed", "Lost",
+  ]).optional(),
   priority: z.enum(["Low", "Medium", "High"]).optional(),
   assignedTo: z.string().optional().nullable(),
   communicationLog: z.string().optional().nullable(),

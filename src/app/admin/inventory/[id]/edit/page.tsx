@@ -24,13 +24,18 @@ export default async function EditEquipmentPage({ params }: Props) {
     model: equipment.model,
     ratedPowerMW: equipment.ratedPowerMW ?? undefined,
     fuelType: equipment.fuelType ?? undefined,
+    frequency: equipment.frequency ?? undefined,
     yearOfManufacture: equipment.yearOfManufacture ?? undefined,
     operatingHours: equipment.operatingHours ?? undefined,
-    condition: equipment.condition as "Excellent" | "Good" | "Fair" | "For Parts",
+    condition: equipment.condition,
     location: equipment.location ?? undefined,
     description: equipment.description,
     status: equipment.status as "Available" | "UnderNegotiation" | "Sold",
     featured: equipment.featured,
+    showPrice: equipment.showPrice,
+    price: equipment.price ?? undefined,
+    priceCurrency: equipment.priceCurrency ?? "USD",
+    documentsAvailable: equipment.documentsAvailable,
     images: images.map((url) => ({ url })),
     keySpecs,
     serialNumber: equipment.serialNumber ?? undefined,
@@ -38,6 +43,7 @@ export default async function EditEquipmentPage({ params }: Props) {
     sellerFloorPrice: equipment.sellerFloorPrice ?? undefined,
     assetOwnerName: equipment.assetOwnerName ?? undefined,
     assetOwnerContact: equipment.assetOwnerContact ?? undefined,
+    documentUrl: equipment.documentUrl ?? undefined,
   };
 
   return (

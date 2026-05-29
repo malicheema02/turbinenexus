@@ -15,6 +15,7 @@ const equipmentSchema = z.object({
   model: z.string().min(1),
   ratedPowerMW: z.number().optional().nullable(),
   fuelType: z.string().optional().nullable(),
+  frequency: z.string().optional().nullable(),
   yearOfManufacture: z.number().int().optional().nullable(),
   operatingHours: z.number().int().optional().nullable(),
   condition: z.string().min(1),
@@ -24,12 +25,18 @@ const equipmentSchema = z.object({
   images: z.string(),
   status: z.enum(["Available", "UnderNegotiation", "Sold"]),
   featured: z.boolean().default(false),
+  // Pricing (public)
+  showPrice: z.boolean().default(false),
+  price: z.number().optional().nullable(),
+  priceCurrency: z.string().default("USD"),
+  documentsAvailable: z.boolean().default(false),
   // Private fields
   serialNumber: z.string().optional().nullable(),
   internalNotes: z.string().optional().nullable(),
   sellerFloorPrice: z.number().optional().nullable(),
   assetOwnerName: z.string().optional().nullable(),
   assetOwnerContact: z.string().optional().nullable(),
+  documentUrl: z.string().optional().nullable(),
 });
 
 function slugify(text: string): string {

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ArrowLeft, Mail, Phone, Briefcase, Building2, ChevronRight } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import { DeleteButton } from "@/components/admin/DeleteButton";
+import { ContactEditForm } from "./ContactEditForm";
 
 export const metadata: Metadata = {
   title: "Contact Detail — Turbine Nexus Admin",
@@ -105,6 +106,22 @@ export default async function ContactDetailPage({
             {contact.notes}
           </div>
         )}
+      </div>
+
+      {/* Edit Contact */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+        <h2 className="text-lg font-bold text-[#0F172A] mb-4">Edit Contact</h2>
+        <ContactEditForm
+          contact={{
+            id: contact.id,
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone,
+            jobTitle: contact.jobTitle,
+            notes: contact.notes,
+            companyId: contact.companyId,
+          }}
+        />
       </div>
 
       {/* Inquiry History */}

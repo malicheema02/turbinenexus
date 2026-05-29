@@ -17,7 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { FeaturedInventorySection } from "@/components/inventory/FeaturedInventorySection";
+import { NeedCapacityWidget } from "@/components/home/NeedCapacityWidget";
 import { findFeaturedEquipment } from "@/lib/queries";
+import { getSettingsMap } from "@/lib/settings";
 
 export const metadata: Metadata = {
   title: "Turbine Nexus — Surplus Power Generation Equipment Specialists",
@@ -30,12 +32,12 @@ export const metadata: Metadata = {
   },
 };
 
-const stats = [
-  { value: "500+ MW", label: "Capacity Brokered" },
-  { value: "40+", label: "Countries Served" },
-  { value: "15+", label: "Years Combined Expertise" },
-  { value: "$2B+", label: "Asset Value Managed" },
-];
+const STAT_FALLBACK = {
+  mw: "500+ MW",
+  countries: "40+",
+  years: "15+",
+  value: "$2B+",
+};
 
 const valueProps = [
   {
@@ -76,6 +78,18 @@ const processSteps = [
 
 export default async function HomePage() {
   const featuredEquipment = await findFeaturedEquipment(3).catch(() => []);
+  const settings = await getSettingsMap();
+
+  const heroHeading = settings.get("hero_heading")?.trim() || "Surplus Power Generation Assets — Relocated & Redeployed Globally";
+  const heroSubheading = settings.get("hero_subheading")?.trim() ||
+    "Turbine Nexus connects motivated sellers and strategic buyers of high-value gas turbines, steam turbines, and industrial power generation equipment. Confidential. Efficient. Global.";
+
+  const stats = [
+    { value: settings.get("about_stat_mw")?.trim() || STAT_FALLBACK.mw, label: "Capacity Brokered" },
+    { value: settings.get("about_stat_countries")?.trim() || STAT_FALLBACK.countries, label: "Countries Served" },
+    { value: settings.get("about_stat_years")?.trim() || STAT_FALLBACK.years, label: "Years Combined Expertise" },
+    { value: settings.get("about_stat_value")?.trim() || STAT_FALLBACK.value, label: "Asset Value Managed" },
+  ];
 
   return (
     <>
@@ -108,13 +122,11 @@ export default async function HomePage() {
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
-                Surplus Power Generation Assets —{" "}
-                <span className="text-[#F59E0B]">Relocated &amp; Redeployed Globally</span>
+                {heroHeading}
               </h1>
 
               <p className="text-xl text-slate-300 leading-relaxed mb-10 max-w-2xl">
-                Turbine Nexus connects motivated sellers and strategic buyers of high-value gas turbines,
-                steam turbines, and industrial power generation equipment. Confidential. Efficient. Global.
+                {heroSubheading}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -152,6 +164,13 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Need Capacity Fast — high-intent lead widget */}
+        <section className="py-14 bg-[#F8FAFC]">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <NeedCapacityWidget />
           </div>
         </section>
 

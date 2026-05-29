@@ -1,19 +1,37 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_SETTINGS } from "@/lib/defaultSettings";
 import { SiteSettingsForm } from "./SiteSettingsForm";
 
 export const metadata: Metadata = { title: "Site Settings — Turbine Nexus Admin" };
+
+// Render groups in a sensible order rather than alphabetical.
+const GROUP_ORDER = ["hero", "about", "contact", "social", "general", "integrations"];
 
 export default async function SiteSettingsPage() {
   let byGroup: Record<string, { id: string; key: string; value: string; label: string; group: string }[]> = {};
   let needsMigration = false;
 
   try {
-    const settings = await prisma.siteSettings.findMany({ orderBy: { group: "asc" } });
+    // Backfill any missing default keys so newly-added CMS fields always appear.
+    const existing = await prisma.siteSettings.findMany({ select: { key: true } });
+    const existingKeys = new Set(existing.map((s) => s.key));
+    const missing = DEFAULT_SETTINGS.filter((d) => !existingKeys.has(d.key));
+    if (missing.length > 0) {
+      await prisma.siteSettings.createMany({ data: missing });
+    }
+
+    const settings = await prisma.siteSettings.findMany();
     byGroup = settings.reduce<typeof byGroup>((acc, s) => {
       (acc[s.group] ??= []).push(s);
       return acc;
     }, {});
+    // Order groups
+    byGroup = Object.fromEntries(
+      Object.entries(byGroup).sort(
+        ([a], [b]) => (GROUP_ORDER.indexOf(a) + 1 || 99) - (GROUP_ORDER.indexOf(b) + 1 || 99)
+      )
+    );
   } catch {
     needsMigration = true;
   }
